@@ -1,0 +1,132 @@
+.container {
+    width: min(100% - 2rem, 1200px);
+    margin-inline: auto;
+}
+
+.site-logo{
+    width: clamp(5rem, 5vw, 5rem);
+    height: auto;
+}
+
+/* Buttons */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.2rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: 0.2s ease;
+}
+
+.btn-primary {
+    background-color: var(--color-primary);
+    color: var(--color-surface);
+}
+
+.btn-primary:hover {
+    background-color: var(--color-primary-dark);
+}
+
+.btn-secondary {
+    background-color: var(--color-secondary);
+    color: var(--color-text);
+}
+
+.btn-outline {
+    background-color: transparent;
+    border-color: var(--color-border);
+    color: var(--color-text);
+}
+
+.btn-outline:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+
+/* Cards */
+
+.card {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    padding: 1rem;
+}
+
+
+/* Forms */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.form-label {
+    font-weight: 500;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.7rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background-color: var(--color-surface);
+    color: var(--color-text);
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.required{
+    color: var(--color-primary-dark);
+    font-size: 1rem;
+}
+
+
+/* Alerts */
+
+.alert {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+}
+
+.alert-success {
+    background-color: #DCFCE7;
+    color: #166534;
+}
+
+.alert-warning {
+    background-color: #FEF3C7;
+    color: #92400E;
+}
+
+.alert-danger {
+    background-color: #FEE2E2;
+    color: #991B1B;
+}
+
+
+/* Responsive */
+
+@media (max-width: 768px) {
+    .container {
+        width: min(100% - 1rem, 1200px);
+    }
+
+    .btn {
+        width: 100%;
+    }
+}
