@@ -40,6 +40,8 @@
 
 html {
     scroll-behavior: smooth;
+    width: 100dvw;
+    height: 100dvh;
 }
 
 body {
@@ -47,6 +49,9 @@ body {
     background-color: var(--color-background);
     color: var(--color-text);
     line-height: 1.5;
+
+    width: 100dvw;
+    height: 100dvh;
 }
 
 img {
@@ -70,6 +75,10 @@ h6 {
     font-family: var(--primary-font), sans-serif;
     color: var(--color-text);
     line-height: 1.2;
+}
+
+p{
+    font-family: var(--secondary-font);
 }
 
 span{

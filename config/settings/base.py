@@ -17,7 +17,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env = environ.Env()
 
-environ.Env.read_env(BASE_DIR / '.env')
+env.read_env(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -31,6 +31,7 @@ DEBUG = env.bool('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
 
+AUTH_USER_MODEL = "accounts.User"
 
 # Application definition
 
@@ -163,3 +164,15 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+#EMAIL OTP
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = "smtp-relay.brevo.com"
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = env("BREVO_SMTP_HOST_LOGIN")
+EMAIL_HOST_PASSWORD = env("BREVO_SMTP_KEY")
+
+DEFAULT_FROM_EMAIL = env("BREVO_SMTP_SENDER")
