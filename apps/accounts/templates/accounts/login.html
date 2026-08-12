@@ -1,67 +1,108 @@
+{% extends 'base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width; intial-scale=1.0">
-        <meta name="description" content="Buy, sell, and connect with products and services.">
+{% block title %}
+    USeP Marketplace - Login
+{% endblock %}
 
-        <title>USeP Marketplace - Login</title>
+{% block meta_description %}
+    Login to USeP Marketplace.
+{% endblock %}
 
-        <link rel="icon" type="image/png" href="{% static 'images/site-logo.png' %}">
-       
-        <link rel="stylesheet" href="{% static 'css/base.css' %}">
-        <link rel="stylesheet" href="{% static 'css/components.css' %}">
-        
-        <link rel="stylesheet" href="{% static 'css/login.css' %}">
-    </head>
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
 
-    <body>
-        <main id="main-container">
-            <section id="login-content">
 
-                <header class="brand">
-                    <img class="site-logo" src="{% static 'images/site-logo.png' %}" alt="USeP Marketplace Logo">
-                </header>
+{% block content %}
 
-                <section class="intro-container">
-                    <h2>Buy. Sell. Connect.</h2>
-                    <p>Please login to surf countless products and services.</p>
-                </section>
+<main id="main-container">
 
-                <section id="form-container">
-                    <form class="form" id="login-form" method="post">
-                        <div class="form-group">
-                            <label class="form-label" for="email">
-                                Email <span class="required" aria-hidden="true">*</span>
-                            </label>
-                            <input class="form-control" id="email" type="email" name="email" autocomplete="email" placeholder="Enter email" required>
-                        </div>
+    <section id="login-content">
 
-                        <div class="form-group">
-                            <label class="form-label" for="password">
-                                Password <span class="required" aria-hidden="true">*</span>
-                            </label>
-                            <input class="form-control" id="password" type="password" name="password" autocomplete="current-password" placeholder="Enter password" required>
-                        </div>
+        <header class="brand">
+            <img
+                class="site-logo"
+                src="{% static 'images/site-logo.png' %}"
+                alt="USeP Marketplace Logo"
+            >
+        </header>
 
-                        <div class="form-group">
-                            <button class="btn btn-primary" type="submit">Login</button>
-                        </div>
-                    </form>
-                </section>
+        <section class="intro-container">
+            <h2>Buy. Sell. Connect.</h2>
+            <p>
+                Please login to surf countless products and services.
+            </p>
+        </section>
 
-                <footer>
-                      <p>© 2026 USeP Marketplace. "USeP Marketplace Tagum-Mabini Campus Tagum Unit". All rights reserved.</p>
-                </footer>
-            </section>
+        <section id="form-container">
 
-            <aside id="cover-container">
-                <img src="{% static 'images/site-cover.png'%}" alt="Some Abstract Art">
-            </aside>
-        </main>
-        
-        <script src="{% static 'js/login.js' %}"></script>
-    </body>
-</html>
+            <form class="form" id="login-form" method="post">
+
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label class="form-label" for="email">
+                        Email
+                        <span class="required" aria-hidden="true">*</span>
+                    </label>
+
+                    <input
+                        class="form-control"
+                        id="email"
+                        type="email"
+                        name="email"
+                        autocomplete="email"
+                        placeholder="Enter email"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">
+                        Password
+                        <span class="required" aria-hidden="true">*</span>
+                    </label>
+
+                    <input
+                        class="form-control"
+                        id="password"
+                        type="password"
+                        name="password"
+                        autocomplete="current-password"
+                        placeholder="Enter password"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button class="btn btn-primary" type="submit">
+                        Login
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+
+        <footer>
+            <p>© 2026 USeP Marketplace. All rights reserved.</p>
+        </footer>
+
+    </section>
+
+    <aside id="cover-container">
+        <img
+            src="{% static 'images/site-cover.png' %}"
+            alt="Abstract artwork"
+        >
+    </aside>
+
+</main>
+
+{% endblock %}
+
+
+{% block extra_js %}
+    <script src="{% static 'js/login.js' %}"></script>
+{% endblock %}
