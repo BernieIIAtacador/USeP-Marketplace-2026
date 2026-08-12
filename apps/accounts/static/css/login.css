@@ -60,6 +60,10 @@ footer p{
     color: var(--color-text-secondary);
 }
 
+.messages-container{
+    left: 2rem;
+}
+
 @media (max-width: 768px) {
 
     #main-container {

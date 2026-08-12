@@ -46,6 +46,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'config.settings.middleware.NoCacheAuthenticatedPagesMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -176,3 +177,19 @@ EMAIL_HOST_USER = env("BREVO_SMTP_HOST_LOGIN")
 EMAIL_HOST_PASSWORD = env("BREVO_SMTP_KEY")
 
 DEFAULT_FROM_EMAIL = env("BREVO_SMTP_SENDER")
+
+# Sessions and Cookies
+LOGIN_URL = "login"  
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
+SESSION_COOKIE_AGE = 1209600
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_COOKIE_HTTPONLY = True   
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
