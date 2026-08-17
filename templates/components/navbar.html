@@ -1,0 +1,40 @@
+{% load static %}
+<nav class="navbar">
+    <div class="navbar-brand">
+        <a href="{% url 'home' %}">
+            <img src="{% static 'images/logo.png' %}" alt="Logo" class="logo">
+            MySite
+        </a>
+    </div>
+
+    <ul class="navbar-links">
+        <li>
+            <a href="{% url 'home' %}"
+               class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+               Home
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'about' %}"
+               class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+               About
+            </a>
+        </li>
+
+        {% if user.is_authenticated %}
+            <li class="navbar-user">Hi, {{ user.username }}</li>
+            {% if user.is_staff %}
+                <li><a href="{% url 'admin:index' %}">Admin</a></li>
+            {% endif %}
+            <li>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </li>
+        {% else %}
+            <li><a href="{% url 'login' %}">Login</a></li>
+            <li><a href="{% url 'signup' %}">Sign Up</a></li>
+        {% endif %}
+    </ul>
+</nav>
