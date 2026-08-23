@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add listing | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/add-listing.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="add-listing-shell">
+    {% include 'components/navbar.html' %}
+    <main class="add-listing-main container">
+        <a class="back-link" href="{% url 'seller' %}">&#8592; Back to seller dashboard</a>
+        <div class="add-listing-heading"><p class="eyebrow">Seller workspace</p><h1>Add a new listing</h1><p>Share something useful with the USeP community.</p></div>
+        <form class="add-listing-layout" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <section class="add-form-panel">
+                <div class="form-group"><label class="form-label" for="listing-name">Item name</label><input class="form-control" id="listing-name" name="name" placeholder="e.g. Engineering textbook" required></div>
+                <div class="field-row"><div class="form-group"><label class="form-label" for="listing-category">Category</label><select class="form-control" id="listing-category" name="category" required><option value="" selected disabled>Choose a category</option><option>Textbooks</option><option>Electronics</option><option>Uniforms</option><option>Dorm essentials</option><option>Other</option><option>Services</option></select></div><div class="form-group"><label class="form-label" for="listing-price">Price (PHP)</label><input class="form-control" id="listing-price" name="price" type="number" min="0" placeholder="0" required></div></div>
+                <div class="form-group"><label class="form-label" for="listing-condition">Condition or availability</label><select class="form-control" id="listing-condition" name="condition"><option>Like new</option><option>Barely used</option><option>Good condition</option><option>For parts</option></select></div>
+                <div class="form-group"><label class="form-label" for="listing-description">Description</label><textarea class="form-control" id="listing-description" name="description" rows="6" placeholder="Tell buyers what they should know..."></textarea></div>
+                <div class="form-actions"><a class="btn btn-outline" href="{% url 'seller' %}">Cancel</a><button class="btn btn-primary" type="submit">Publish listing</button></div>
+            </section>
+            <section class="upload-panel"><label class="upload-box" for="listing-image"><span class="upload-icon">+</span><strong>Upload a product image</strong><small>JPG, PNG, or WEBP up to 5 MB</small><span class="upload-action">Choose image</span></label><input class="image-input" id="listing-image" name="image" type="file" accept="image/*"><img class="image-preview" alt="Selected product preview" hidden></section>
+        </form>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/add-listing.js' %}"></script>{% endblock %}

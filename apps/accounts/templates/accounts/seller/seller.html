@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Seller workspace | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/seller.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="seller-shell">
+    {% include 'components/navbar.html' %}
+    <main class="seller-main container">
+        <section class="seller-heading">
+            <div>
+                <p class="eyebrow">Your marketplace workspace</p>
+                <h1>Seller dashboard</h1>
+                <p class="seller-intro">Keep track of your listings and connect with buyers around campus.</p>
+            </div>
+            <a class="btn btn-primary" href="{% url 'add_listing' %}">+ Add listing</a>
+        </section>
+
+        <section class="seller-stats" aria-label="Seller statistics">
+            <article class="stat-active"><span class="stat-kicker">Marketplace activity</span><span class="stat-label">Active listings</span><strong>{{ active_count }}</strong><small>Visible to campus</small></article>
+            <article class="stat-views"><span class="stat-kicker">Marketplace activity</span><span class="stat-label">Total views</span><strong>{{ total_views }}</strong><small>Across your listings</small></article>
+            <article class="stat-sold"><span class="stat-kicker">Marketplace activity</span><span class="stat-label">Items sold</span><strong>{{ sold_count }}</strong><small>Completed exchanges</small></article>
+        </section>
+
+        <section class="seller-note"><span class="note-mark">i</span><div><h2>Meet buyers safely</h2><p>Use a public campus location for meetups and keep conversations inside the marketplace.</p></div></section>
+
+        <section class="seller-listings">
+            <form class="listing-filters" method="get" id="listing-filters">
+                <label class="filter-search"><span aria-hidden="true">&#9906;</span><input type="search" name="q" value="{{ search_query }}" placeholder="Search your listings" aria-label="Search your listings"></label>
+                <select class="filter-button" name="status" aria-label="Filter by listing status">
+                    <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All statuses</option>
+                    <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="sold" {% if selected_status == 'sold' %}selected{% endif %}>Sold</option>
+                    <option value="unavailable" {% if selected_status == 'unavailable' %}selected{% endif %}>Unavailable</option>
+                </select>
+            </form>
+            <div class="seller-list">
+                {% for listing in listings %}
+                <article class="seller-listing" data-status="{{ listing.status|lower }}" data-search="{{ listing.name|lower }} {{ listing.category|lower }}">
+                    <img src="{{ listing.image }}" alt="{{ listing.name }}">
+                    <div class="seller-listing-info"><span class="status-pill status-pill-{{ listing.status|lower }}">{{ listing.status }}</span><h3>{{ listing.name }}</h3><p>{{ listing.category }}</p></div>
+                    <div class="seller-listing-stat"><span>Price</span><strong>{{ listing.price }}</strong></div>
+                    <div class="seller-listing-stat"><span>Views</span><strong>{{ listing.views }}</strong></div>
+                    <a class="manage-button" href="{% url 'manage_item' listing.id %}" aria-label="Manage {{ listing.name }}">Manage <span aria-hidden="true">&#8594;</span></a>
+                </article>
+                {% empty %}
+                <p class="empty-state">You have no listings yet.</p>
+                {% endfor %}
+                <p class="empty-state no-filter-results" hidden>No listings match your filters.</p>
+            </div>
+        </section>
+
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/seller.js' %}"></script>
+{% endblock %}

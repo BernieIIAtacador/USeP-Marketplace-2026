@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Marketplace | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-shell">
+    {% include 'components/navbar.html' %}
+
+    <main class="dashboard-main container">
+        <section class="dashboard-hero">
+            <div>
+                <p class="eyebrow">USeP community marketplace</p>
+                <h1>Find what you need.<br><em>Pass it forward.</em></h1>
+                <p class="hero-copy">A trusted place for students and staff to buy, sell, and exchange things around campus.</p>
+            </div>
+            <div class="hero-mark" aria-hidden="true"><span>+</span><span>+</span><span>+</span></div>
+        </section>
+
+        <form class="search-panel" method="get" action="{% url 'dashboard' %}" aria-label="Search marketplace">
+            <label class="search-field">
+                <span class="search-icon" aria-hidden="true">&#9906;</span>
+                <input type="search" name="q" value="{{ search_query }}" placeholder="Search textbooks, gadgets, uniforms..." aria-label="Search listings">
+            </label>
+            {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+            <button class="btn btn-primary search-button" type="submit">Search listings</button>
+        </form>
+
+        <section class="section-block">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Explore</p>
+                    <h2>Shop by category</h2>
+                </div>
+                <a class="text-link" href="{% url 'dashboard' %}#featured">View all <span aria-hidden="true">&#8594;</span></a>
+            </div>
+            <div class="category-grid">
+                {% for category in categories %}
+                <a class="category-card" href="{% url 'dashboard' %}?category={{ category.name|urlencode }}#featured">
+                    <span class="category-icon category-icon-{{ forloop.counter }}">{{ category.icon }}</span>
+                    <span><strong>{{ category.name }}</strong><small>{{ category.count }}</small></span>
+                    <span class="category-arrow" aria-hidden="true">&#8594;</span>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="section-block" id="featured">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">Fresh on campus</p>
+                    <h2>Featured listings</h2>
+                </div>
+                <button class="filter-button" type="button">Newest first <span aria-hidden="true">&#8595;</span></button>
+            </div>
+            <div class="listing-grid">
+                {% for item in featured_items %}
+                <article class="listing-card">
+                    <div class="listing-image listing-image-{{ item.accent }}">
+                        <img src="{{ item.image }}" alt="{{ item.name }}">
+                    </div>
+                    <div class="listing-category"><span>{{ item.category|slice:':2'|upper }}</span>{{ item.category }}</div>
+                    <div class="listing-content">
+                        <div class="listing-meta"><span>{{ item.condition }}</span><button type="button" aria-label="Save {{ item.name }}">&#9825;</button></div>
+                        <h3>{{ item.name }}</h3>
+                        <p>Listed by {{ item.seller }}</p>
+                        <div class="listing-footer"><strong>{{ item.price }}</strong><button class="view-button" type="button">View item</button></div>
+                    </div>
+                </article>
+                {% empty %}
+                <p class="empty-state">No listings match your search.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="sell-banner">
+            <div><p class="eyebrow">Have something to share?</p><h2>Turn your unused things into someone else's next find.</h2></div>
+            <a class="btn btn-secondary" href="{% url 'seller' %}">Sell an item <span aria-hidden="true">&#8599;</span></a>
+        </section>
+    </main>
+</div>
+{% endblock %}

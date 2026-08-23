@@ -1,0 +1,41 @@
+{% load static %}
+<nav class="navbar">
+    <div class="navbar-brand">
+        <a href="{% url 'dashboard' %}">
+            <img src="{% static 'images/site-logo.png' %}" alt="USeP Marketplace logo" class="logo">
+            USeP <span>Marketplace</span>
+        </a>
+    </div>
+
+    <ul class="navbar-links">
+        <li>
+            <a href="{% url 'dashboard' %}"
+               class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+               Browse
+            </a>
+        </li>
+        {% if user.is_authenticated %}
+            <li>
+                <a href="{% url 'seller' %}"
+                   class="{% if request.resolver_match.url_name == 'seller' %}active{% endif %}">
+                   Sell
+                </a>
+            </li>
+        {% endif %}
+
+        {% if user.is_authenticated %}
+            <li class="navbar-user">Hi, {{ user.first_name|default:user.email }}</li>
+            {% if user.is_staff %}
+                <li><a href="{% url 'admin:index' %}">Admin</a></li>
+            {% endif %}
+            <li>
+                <form method="post" action="{% url 'logout' %}" class="logout-form">
+                    {% csrf_token %}
+                    <button type="submit" class="logout-btn">Logout</button>
+                </form>
+            </li>
+        {% else %}
+            <li><a href="{% url 'login' %}">Login</a></li>
+        {% endif %}
+    </ul>
+</nav>

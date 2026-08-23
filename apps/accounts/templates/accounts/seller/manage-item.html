@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Manage item | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/manage-item.css' %}">
+{% endblock %}
+{% block content %}
+<div class="manage-shell">
+    {% include 'components/navbar.html' %}
+    <main class="manage-main container">
+        <a class="back-link" href="{% url 'seller' %}">&#8592; Back to seller dashboard</a>
+        <div class="manage-heading"><div><p class="eyebrow">Seller workspace</p><h1>Manage item</h1></div><span class="status-pill status-pill-{{ item.status|lower }}" id="item-status-badge">{{ item.status }}</span></div>
+
+        <div class="manage-layout">
+            {% csrf_token %}
+            <section class="preview-panel">
+                <img src="{{ item.image }}" alt="{{ item.name }}">
+            <span class="change-photo change-photo-disabled">Image preview</span>
+            <small class="upload-help">Seller actions are currently view-only.</small>
+                <div class="preview-stats"><span>Listing views</span><strong>{{ item.views }}</strong></div>
+            </section>
+
+            <section class="edit-panel read-only-panel">
+                <div class="form-group"><label class="form-label" for="item-name">Item name</label><input class="form-control" id="item-name" value="{{ item.name }}" readonly></div>
+                <div class="field-row"><div class="form-group"><label class="form-label" for="item-category">Category</label><input class="form-control" id="item-category" value="{{ item.category }}" readonly></div><div class="form-group"><label class="form-label" for="item-price">Price (PHP)</label><input class="form-control" id="item-price" value="{{ item.price }}" readonly></div></div>
+                <div class="form-group"><label class="form-label" for="item-condition">Condition or availability</label><input class="form-control" id="item-condition" value="{{ item.condition }}" readonly></div>
+                <div class="form-group"><label class="form-label" for="item-description">Description</label><textarea class="form-control" id="item-description" rows="5" readonly>{{ item.description }}</textarea></div>
+                <div class="status-actions">
+                    <label class="form-label" for="item-status">Listing status</label>
+                    <select class="status-select status-select-{{ item.status|lower }}" id="item-status" disabled>
+                        <option value="Active" {% if item.status == 'Active' %}selected{% endif %}>Available</option>
+                        <option value="Sold" {% if item.status == 'Sold' %}selected{% endif %}>Sold</option>
+                        <option value="Unavailable" {% if item.status == 'Unavailable' %}selected{% endif %}>Unavailable</option>
+                    </select>
+                    <small class="status-save-message" id="status-save-message" aria-live="polite"></small>
+                </div>
+                <div class="form-actions"><button class="btn btn-outline" type="button" disabled>Delete listing</button><button class="btn btn-primary" type="button" disabled>Save changes</button></div>
+            </section>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
