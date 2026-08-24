@@ -1,40 +1,75 @@
 {% load static %}
-<nav class="navbar">
-    <div class="navbar-brand">
-        <a href="{% url 'home' %}">
-            <img src="{% static 'images/logo.png' %}" alt="Logo" class="logo">
-            MySite
-        </a>
-    </div>
 
-    <ul class="navbar-links">
-        <li>
-            <a href="{% url 'home' %}"
-               class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-               Home
-            </a>
-        </li>
-        <li>
-            <a href="{% url 'about' %}"
-               class="{% if request.resolver_match.url_name == 'about' %}active{% endif %}">
-               About
-            </a>
-        </li>
+<nav id="navbar">
+    <a href="{% url 'dashboard:seller' %}" class="navbar-brand">
+        <img class="site-logo" src="{% static 'images/site-logo.png' %}" alt="USeP Marketplace Logo">
+        <span class="navbar-site-name">USeP Marketplace</span>
+    </a>
 
-        {% if user.is_authenticated %}
-            <li class="navbar-user">Hi, {{ user.username }}</li>
-            {% if user.is_staff %}
-                <li><a href="{% url 'admin:index' %}">Admin</a></li>
-            {% endif %}
-            <li>
-                <form method="post" action="{% url 'logout' %}" class="logout-form">
-                    {% csrf_token %}
-                    <button type="submit" class="logout-btn">Logout</button>
-                </form>
-            </li>
-        {% else %}
-            <li><a href="{% url 'login' %}">Login</a></li>
-            <li><a href="{% url 'signup' %}">Sign Up</a></li>
+    <form class="navbar-search" method="get">
+        <input
+            class="form-control"
+            type="search"
+            name="q"
+            placeholder="Search products, services..."
+            value="{{ request.GET.q }}"
+            autocomplete="off"
+        >
+        <button type="submit" aria-label="Search">
+            <i class="bi bi-search"></i>
+        </button>
+    </form>
+
+    <div class="navbar-actions">
+        {% if request.user.is_authenticated %}
+        <button type="button" class="navbar-icon-btn" aria-label="Messages">
+            <i class="bi bi-chat-dots"></i>
+            <span class="navbar-badge">3</span>
+        </button>
         {% endif %}
-    </ul>
+
+        {% if request.user.is_authenticated %}
+        <div class="navbar-profile">
+            <button
+                type="button"
+                id="profile-toggle"
+                aria-haspopup="true"
+                aria-expanded="false"
+            >
+                <img
+                    class="profile-avatar"
+                    src="{% if request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+                    alt="{{ request.user.first_name }}'s profile picture"
+                >
+            </button>
+            <div id="profile-dropdown" class="dropdown-menu">
+            <div class="dropdown-header">
+                <img
+                    class="profile-avatar-lg"
+                    src="{% if request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+                    alt="{{ request.user.first_name }}'s profile picture"
+                >
+                <div class="dropdown-user-info">
+                    <span class="dropdown-name">{{ request.user.first_name }} {{ request.user.last_name }}</span>
+                    <span class="dropdown-email">{{ request.user.email }}</span>
+                </div>
+            </div>
+            <a href="{% url 'profile' %}" class="dropdown-item">
+                <i class="bi bi-person"></i>
+                View Profile
+            </a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="dropdown-item dropdown-item-danger">
+                    <i class="bi bi-box-arrow-right"></i>
+                    Logout
+                </button>
+            </form>
+        </div>
+    </div>
+        {% else %}
+        <a href="{% url 'login' %}" class="navbar-login-btn">Login</a>
+        {% endif %}
+    </div>
 </nav>
+<script src="{% static 'js/navbar.js' %}"></script>

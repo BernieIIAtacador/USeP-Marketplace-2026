@@ -234,6 +234,11 @@ class StaffProfile(models.Model):
         return self.staff_id
 
 
+class OTPPurpose(models.TextChoices):
+    EMAIL_VERIFICATION = 'EMAIL_VERIFICATION', 'Email Verification'
+    PASSWORD_RESET = 'PASSWORD_RESET', 'Password Reset'
+
+
 class EmailOTP(models.Model):
 
     user = models.ForeignKey(
@@ -244,6 +249,12 @@ class EmailOTP(models.Model):
 
     otp_hash = models.CharField(
         max_length=128
+    )
+
+    purpose = models.CharField(
+        max_length=32,
+        choices=OTPPurpose.choices,
+        default=OTPPurpose.EMAIL_VERIFICATION
     )
 
     created_at = models.DateTimeField(
@@ -261,4 +272,4 @@ class EmailOTP(models.Model):
     )
 
     def __str__(self):
-        return f'OTP for {self.user.email}'
+        return f'{self.get_purpose_display()} OTP for {self.user.email}'

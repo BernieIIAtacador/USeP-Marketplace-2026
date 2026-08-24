@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Seller workspace | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/seller-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="seller-shell dashboard-shell">
+    {% include 'components/navbar.html' %}
+    <main class="seller-main dashboard-main container">
+
+        <section class="seller-heading dashboard-banner">
+            <div>
+                <p class="eyebrow">Your marketplace workspace</p>
+                <h1>Seller dashboard</h1>
+                <p class="seller-intro">Keep track of your listings and connect with buyers around campus.</p>
+            </div>
+            <button class="btn btn-primary" type="button" id="open-add-listing">+ Add listing</button>
+        </section>
+
+        <section class="stat-grid" aria-label="Seller statistics">
+            <article class="stat-card"><span class="stat-kicker">Marketplace activity</span><span class="stat-label">Active listings</span><strong>12</strong><small>Visible to campus</small></article>
+            <article class="stat-card stat-card-accent"><span class="stat-kicker">Marketplace activity</span><span class="stat-label">Total views</span><strong>340</strong><small>Across your listings</small></article>
+            <article class="stat-card stat-card-gold"><span class="stat-kicker">Marketplace activity</span><span class="stat-label">Items sold</span><strong>8</strong><small>Completed exchanges</small></article>
+        </section>
+
+        <section class="note-banner"><span class="note-banner-mark">i</span><div><h2>Meet buyers safely</h2><p>Use a public campus location for meetups and keep conversations inside the marketplace.</p></div></section>
+
+        <section class="seller-listings">
+            <form class="listing-filters" id="listing-filters">
+                <label class="filter-search"><span aria-hidden="true">&#9906;</span><input type="search" id="listing-search" placeholder="Search your listings" aria-label="Search your listings"></label>
+                <select class="filter-button" id="listing-status-filter" aria-label="Filter by listing status">
+                    <option value="all" selected>All statuses</option>
+                    <option value="active">Active</option>
+                    <option value="sold">Sold</option>
+                    <option value="unavailable">Unavailable</option>
+                </select>
+            </form>
+
+            {# Example rows for layout purposes. When the backend exists, swap this #}
+            {# block for a {% for listing in listings %} loop over real data — keep #}
+            {# the same markup/classes and add the data-* attributes on each article #}
+            {# so the manage modal below still populates the same way. #}
+            <div class="seller-list" id="seller-list">
+                <article class="seller-listing" data-status="active" data-search="engineering mechanics textbook textbooks"
+                    data-name="Engineering Mechanics Textbook" data-category="Textbooks" data-condition="Good condition"
+                    data-price="₱450" data-status-value="Active" data-views="34"
+                    data-image="https://placehold.co/320x240?text=Textbook"
+                    data-description="4th edition, minimal highlighting, all pages intact.">
+                    <img src="https://placehold.co/160x120?text=Textbook" alt="Engineering Mechanics Textbook">
+                    <div class="seller-listing-info"><span class="status-pill status-pill-active">Active</span><h3>Engineering Mechanics Textbook</h3><p>Textbooks</p></div>
+                    <div class="seller-listing-stat"><span>Price</span><strong>₱450</strong></div>
+                    <div class="seller-listing-stat"><span>Views</span><strong>34</strong></div>
+                    <button class="manage-button" type="button">Manage <span aria-hidden="true">&#8594;</span></button>
+                </article>
+
+                <article class="seller-listing" data-status="sold" data-search="scientific calculator electronics"
+                    data-name="Scientific Calculator" data-category="Electronics" data-condition="Barely used"
+                    data-price="₱900" data-status-value="Sold" data-views="61"
+                    data-image="https://placehold.co/320x240?text=Calculator"
+                    data-description="Casio fx-991, comes with case.">
+                    <img src="https://placehold.co/160x120?text=Calculator" alt="Scientific Calculator">
+                    <div class="seller-listing-info"><span class="status-pill status-pill-sold">Sold</span><h3>Scientific Calculator</h3><p>Electronics</p></div>
+                    <div class="seller-listing-stat"><span>Price</span><strong>₱900</strong></div>
+                    <div class="seller-listing-stat"><span>Views</span><strong>61</strong></div>
+                    <button class="manage-button" type="button">Manage <span aria-hidden="true">&#8594;</span></button>
+                </article>
+
+                <article class="seller-listing" data-status="unavailable" data-search="pe uniform uniforms"
+                    data-name="PE Uniform (Medium)" data-category="Uniforms" data-condition="For parts"
+                    data-price="₱250" data-status-value="Unavailable" data-views="12"
+                    data-image="https://placehold.co/320x240?text=Uniform"
+                    data-description="Slightly faded print, still wearable.">
+                    <img src="https://placehold.co/160x120?text=Uniform" alt="PE Uniform (Medium)">
+                    <div class="seller-listing-info"><span class="status-pill status-pill-unavailable">Unavailable</span><h3>PE Uniform (Medium)</h3><p>Uniforms</p></div>
+                    <div class="seller-listing-stat"><span>Price</span><strong>₱250</strong></div>
+                    <div class="seller-listing-stat"><span>Views</span><strong>12</strong></div>
+                    <button class="manage-button" type="button">Manage <span aria-hidden="true">&#8594;</span></button>
+                </article>
+
+                <p class="empty-state no-filter-results" hidden>No listings match your filters.</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Add listing modal -->
+<div class="modal-overlay" id="add-listing-modal" hidden>
+    <div class="modal-dialog modal-dialog-wide">
+        <div class="modal-header">
+            <h2>Add a new listing</h2>
+            <button class="modal-close" type="button" data-close-modal="add-listing-modal" aria-label="Close">&times;</button>
+        </div>
+        <form class="add-listing-layout">
+            <section class="add-form-panel">
+                <div class="form-group"><label class="form-label" for="listing-name">Item name</label><input class="form-control" id="listing-name" placeholder="e.g. Engineering textbook" required></div>
+                <div class="field-row">
+                    <div class="form-group"><label class="form-label" for="listing-category">Category</label>
+                        <select class="form-control" id="listing-category" required>
+                            <option value="" selected disabled>Choose a category</option>
+                            <option>Textbooks</option><option>Electronics</option><option>Uniforms</option><option>Dorm essentials</option><option>Other</option><option>Services</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="listing-price">Price (PHP)</label><input class="form-control" id="listing-price" type="number" min="0" placeholder="0" required></div>
+                </div>
+                <div class="form-group"><label class="form-label" for="listing-condition">Condition or availability</label>
+                    <select class="form-control" id="listing-condition"><option>Like new</option><option>Barely used</option><option>Good condition</option><option>For parts</option></select>
+                </div>
+                <div class="form-group"><label class="form-label" for="listing-description">Description</label><textarea class="form-control" id="listing-description" rows="5" placeholder="Tell buyers what they should know..."></textarea></div>
+                <div class="form-actions"><button class="btn btn-outline" type="button" data-close-modal="add-listing-modal">Cancel</button><button class="btn btn-primary" type="submit">Publish listing</button></div>
+            </section>
+            <section class="upload-panel">
+                <label class="upload-box" for="listing-image"><span class="upload-icon">+</span><strong>Upload a product image</strong><small>JPG, PNG, or WEBP up to 5 MB</small><span class="upload-action">Choose image</span></label>
+                <input class="image-input" id="listing-image" type="file" accept="image/*">
+                <img class="image-preview" alt="Selected product preview" hidden>
+            </section>
+        </form>
+    </div>
+</div>
+
+<!-- Manage item modal -->
+<div class="modal-overlay" id="manage-item-modal" hidden>
+    <div class="modal-dialog modal-dialog-wide">
+        <div class="modal-header">
+            <h2>Manage item</h2>
+            <span class="status-pill status-pill-active" id="manage-status-badge">Active</span>
+            <button class="modal-close" type="button" data-close-modal="manage-item-modal" aria-label="Close">&times;</button>
+        </div>
+        <div class="manage-layout">
+            <section class="preview-panel">
+                <img id="manage-image" src="" alt="">
+                <label class="change-photo" for="manage-item-image">Change photo</label>
+                <input class="image-input" id="manage-item-image" type="file" accept="image/*">
+                <div class="preview-stats"><span>Listing views</span><strong id="manage-views">0</strong></div>
+            </section>
+            <section class="edit-panel">
+                <div class="form-group"><label class="form-label" for="manage-name">Item name</label><input class="form-control" id="manage-name"></div>
+                <div class="field-row">
+                    <div class="form-group"><label class="form-label" for="manage-category">Category</label>
+                        <select class="form-control" id="manage-category">
+                            <option>Textbooks</option><option>Electronics</option><option>Uniforms</option><option>Dorm essentials</option><option>Other</option><option>Services</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label class="form-label" for="manage-price">Price (PHP)</label><input class="form-control" id="manage-price"></div>
+                </div>
+                <div class="form-group"><label class="form-label" for="manage-condition">Condition or availability</label>
+                    <select class="form-control" id="manage-condition"><option>Like new</option><option>Barely used</option><option>Good condition</option><option>For parts</option></select>
+                </div>
+                <div class="form-group"><label class="form-label" for="manage-description">Description</label><textarea class="form-control" id="manage-description" rows="4"></textarea></div>
+                <div class="status-actions">
+                    <label class="form-label" for="manage-status">Listing status</label>
+                    <select class="status-select" id="manage-status">
+                        <option value="Active">Available</option><option value="Sold">Sold</option><option value="Unavailable">Unavailable</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-outline" type="button" id="delete-listing">Delete listing</button>
+                    <button class="btn btn-primary" type="button">Save changes</button>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-overlay" id="delete-confirm-modal" hidden>
+    <div class="modal-dialog">
+        <h2>Delete this listing?</h2>
+        <p>This can't be undone. The listing will be removed from the marketplace.</p>
+        <div class="delete-actions">
+            <button class="btn btn-outline" type="button" id="cancel-delete">Cancel</button>
+            <button class="btn btn-delete" type="button" id="confirm-delete">Delete</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/seller-dashboard.js' %}"></script>
+{% endblock %}

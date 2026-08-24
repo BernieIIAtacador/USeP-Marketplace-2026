@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Profile | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-shell">
+    {% include 'components/navbar.html' %}
+    <main class="profile-main container">
+
+        <section class="profile-hero">
+            <form id="avatar-form" method="post" enctype="multipart/form-data" action="{% url 'upload_profile_picture' %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <label class="profile-hero-avatar-wrap" for="avatar-input">
+                    <img class="profile-hero-avatar"
+                         src="{% if request.user.profile_picture %}{{ request.user.profile_picture.url }}{% else %}{% static 'images/default-avatar.png' %}{% endif %}"
+                         alt="{{ request.user.first_name }}'s profile picture">
+                    <span class="profile-hero-avatar-edit" aria-hidden="true"><i class="bi bi-camera"></i></span>
+                </label>
+                <input type="file" name="profile_picture" id="avatar-input" accept="image/*" hidden>
+            </form>
+            <div class="profile-hero-info">
+                <span class="profile-hero-role">{{ request.user.get_role_display }}</span>
+                <h1>{{ request.user.first_name }} {{ request.user.last_name }}</h1>
+                <p>{{ request.user.email }}</p>
+            </div>
+        </section>
+
+        <section class="profile-grid">
+            <div class="panel profile-panel">
+                <h2>Personal information</h2>
+                <dl class="profile-fields">
+                    <div class="profile-field"><dt>First name</dt><dd>{{ request.user.first_name }}</dd></div>
+                    {% if request.user.middle_name %}
+                    <div class="profile-field"><dt>Middle name</dt><dd>{{ request.user.middle_name }}</dd></div>
+                    {% endif %}
+                    <div class="profile-field"><dt>Last name</dt><dd>{{ request.user.last_name }}</dd></div>
+                    <div class="profile-field"><dt>Email</dt><dd>{{ request.user.email }}</dd></div>
+                    <div class="profile-field"><dt>Contact number</dt><dd>{{ request.user.contact_num }}</dd></div>
+                    <div class="profile-field"><dt>Member since</dt><dd>{{ request.user.date_joined|date:"F Y" }}</dd></div>
+                </dl>
+            </div>
+
+            <div class="panel profile-panel">
+                <h2>Account details</h2>
+                <dl class="profile-fields">
+                    {% if request.user.student_profile %}
+                    <div class="profile-field"><dt>Student ID</dt><dd>{{ request.user.student_profile.student_id }}</dd></div>
+                    <div class="profile-field"><dt>Program</dt><dd>{{ request.user.student_profile.major.program }}</dd></div>
+                    <div class="profile-field"><dt>Major</dt><dd>{{ request.user.student_profile.major }}</dd></div>
+                    <div class="profile-field"><dt>Year level</dt><dd>{{ request.user.student_profile.get_year_level_display }}</dd></div>
+                    {% elif request.user.staff_profile %}
+                    <div class="profile-field"><dt>Staff ID</dt><dd>{{ request.user.staff_profile.staff_id }}</dd></div>
+                    <div class="profile-field"><dt>Staff type</dt><dd>{{ request.user.staff_profile.get_staff_type_display }}</dd></div>
+                    <div class="profile-field"><dt>Campus</dt><dd>{{ request.user.staff_profile.campus }}</dd></div>
+                    {% else %}
+                    <p class="profile-empty">No additional account details on file.</p>
+                    {% endif %}
+                </dl>
+            </div>
+        </section>
+
+        <section class="panel profile-security">
+            <div>
+                <h2>Security</h2>
+                <p>Update your password to keep your account secure.</p>
+            </div>
+            <a href="{% url 'change_password' %}" class="btn btn-outline">Change password</a>
+        </section>
+
+    </main>
+</div>
+
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}

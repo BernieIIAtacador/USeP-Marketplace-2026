@@ -31,7 +31,7 @@
 
         <p>
             We've sent a 6-digit verification code to
-            <span class="email-display">test@gmail.com</span>.
+            <span class="email-display">{{ email }}</span>.
         </p>
 
     </section>
@@ -117,15 +117,18 @@
     </section>
 
 
-    <section id="resend-container">
+        <section id="resend-container">
 
         <p>
             Didn't receive the code?
+        </p>
 
-            <button type="button" id="resend-otp">
+        <form method="post">
+            {% csrf_token %}
+            <button class="btn btn-link" type="submit" name="resend_otp" value="1">
                 Resend OTP
             </button>
-        </p>
+        </form>
 
     </section>
 
