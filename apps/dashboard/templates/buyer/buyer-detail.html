@@ -25,11 +25,13 @@
 
         <section class="detail-layout">
             <div class="detail-gallery panel">
-                <div class="detail-image" style="background-image: url('{{ item.image_url }}'); background-size: cover; background-position: center;"></div>
-                <div class="thumbnail-row">
-                    <span class="thumb dot-1"></span>
-                    <span class="thumb dot-2"></span>
-                    <span class="thumb dot-3"></span>
+                <div class="detail-image-frame">
+                    <div class="detail-image" style="background-image: url('{{ item.images.0|default:item.image_url }}'); background-size: cover; background-position: center;"></div>
+                </div>
+                <div class="thumbnail-row" aria-label="Product gallery thumbnails">
+                    {% for image in item.images|default:item.image_url %}
+                        <button type="button" class="thumb {% if forloop.first %}active{% endif %}" data-image="{{ image }}" style="background-image: url('{{ image }}'); background-size: cover; background-position: center;" aria-label="View product image {{ forloop.counter }}"></button>
+                    {% endfor %}
                 </div>
             </div>
 
@@ -43,7 +45,6 @@
                 <div class="detail-meta-box">
                     <div><span>Condition</span><strong>{{ item.condition }}</strong></div>
                     <div><span>Location</span><strong>{{ item.location }}</strong></div>
-                    <div><span>Seller</span><strong>{{ item.seller }}</strong></div>
                 </div>
 
                 <button class="btn btn-primary detail-action" type="button">Message seller</button>
@@ -58,6 +59,23 @@
                     Add to cart
                 </button>
             </aside>
+        </section>
+
+        <section class="seller-profile panel">
+            <div class="seller-profile-content">
+                <div class="seller-avatar" aria-label="Seller profile picture placeholder">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+                <div class="seller-profile-info">
+                    <strong class="seller-name">{{ item.seller }}</strong>
+                    <small class="seller-role">{{ item.seller_role }}</small>
+                </div>
+                {% if other_products %}
+                <a href="{% url 'dashboard:buyer' %}?seller={{ item.seller_id }}" class="btn btn-sm btn-outline other-products-btn">
+                    <i class="bi bi-storefront"></i> Other products ({{ other_products|length }})
+                </a>
+                {% endif %}
+            </div>
         </section>
 
         <section class="detail-info panel">

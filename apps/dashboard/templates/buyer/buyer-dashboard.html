@@ -17,75 +17,44 @@
     {% include 'components/navbar.html' %}
 
     <main class="buyer-main dashboard-main container">
+        {% if not seller_filter %}
         <section class="buyer-hero dashboard-banner">
-            <div>
+            <div class="hero-copy">
                 <p class="eyebrow">USeP marketplace</p>
                 <h1>Find what you need around campus</h1>
                 <p>Browse trusted listings for study essentials, dorm items, services, and local deals.</p>
-            </div>
-            <a href="{% url 'dashboard:seller' %}" class="btn btn-secondary" type="button">Sell something</a>
-        </section>
-
-        <section class="buyer-toolbar panel">
-            <div class="toolbar-group">
-                {% for category in categories %}
-                    <a
-                        href="{% url 'dashboard:buyer' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"
-                        class="chip {% if selected_category == category.slug %}chip-active{% endif %}"
-                    >
-                        {{ category.label }}
-                    </a>
-                {% endfor %}
-            </div>
-            <div class="toolbar-right toolbar-group">
-                <a href="{% url 'dashboard:buyer_cart' %}" class="toolbar-action cart-button" id="cart-button">
-                    <i class="bi bi-cart3"></i>
-                    Cart
-                    <span id="cart-badge" class="cart-badge">0</span>
-                </a>
+                <div class="hero-actions">
+                    <a href="#products" class="btn btn-primary">Shop now</a>
+                    <a href="{% url 'dashboard:seller' %}" class="btn btn-secondary" type="button">Sell something</a>
+                </div>
             </div>
         </section>
+        {% endif %}
 
         <section class="buyer-layout">
-            <aside class="buyer-sidebar panel">
-                <div class="side-header">
-                    <h2>Categories</h2>
-                </div>
+            <div class="buyer-feed" id="products">
+                {% if seller_filter and seller_profile %}
+                <section class="seller-profile panel">
+                    <div class="seller-profile-content">
+                        <div class="seller-avatar" aria-label="Seller profile picture placeholder">
+                            <i class="bi bi-person-circle"></i>
+                        </div>
+                        <div class="seller-profile-info">
+                            <strong class="seller-name">{{ seller_profile.name }}</strong>
+                            <small class="seller-role">{{ seller_profile.role }}</small>
+                        </div>
+                        <a href="{% url 'dashboard:buyer' %}" class="btn btn-sm btn-outline other-products-btn">
+                            <i class="bi bi-arrow-left"></i> Back to all listings
+                        </a>
+                    </div>
+                </section>
+                {% endif %}
 
-                <ul class="side-list">
-                    {% for category in categories %}
-                        <li>
-                            <a
-                                href="{% url 'dashboard:buyer' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"
-                                class="side-link {% if selected_category == category.slug %}active{% endif %}"
-                            >
-                                <span>{{ category.label }}</span>
-                                <strong>{{ category.count }}</strong>
-                            </a>
-                        </li>
-                    {% endfor %}
-                </ul>
-
-                <div class="mini-card">
-                    <p class="eyebrow">Featured</p>
-                    <h3>Campus essentials</h3>
-                    <p>Fresh deals from students and local sellers near your building.</p>
-                </div>
-            </aside>
-
-            <div class="buyer-feed">
                 <div class="feed-header">
                     <div>
                         <p class="eyebrow">Fresh listings</p>
-                        <h2>Recommended for you</h2>
+                        <h2>{% if seller_filter and seller_profile %}Products by {{ seller_profile.name }}{% else %}Recommended for you{% endif %}</h2>
                     </div>
-                    <form method="get" action="{% url 'dashboard:buyer' %}" class="buyer-search-form">
-                        <input type="search" name="q" value="{{ query }}" placeholder="Search products or services" aria-label="Search products or services">
-                        {% if selected_category and selected_category != 'all' %}
-                            <input type="hidden" name="category" value="{{ selected_category }}">
-                        {% endif %}
-                        <button type="submit" class="btn btn-outline">Search</button>
-                    </form>
                 </div>
 
                 <div class="product-grid">
@@ -104,7 +73,10 @@
                                 <h3><a href="{% url 'dashboard:buyer_detail' item.slug %}{% if query %}?q={{ query|urlencode }}{% endif %}{% if selected_category and selected_category != 'all' %}{% if query %}&{% else %}?{% endif %}category={{ selected_category }}{% endif %}" class="product-title-link">{{ item.title }}</a></h3>
                                 <p>{{ item.condition }} • {{ item.location }}</p>
                                 <div class="product-footer">
-                                    <span class="seller-tag">{{ item.seller }}</span>
+                                    <div class="seller-info">
+                                        <strong>{{ item.seller }}</strong>
+                                        <small>{{ item.seller_role }}</small>
+                                    </div>
                                     <span class="view-count"><i class="bi bi-eye"></i> {{ item.views }}</span>
                                 </div>
                                 <div class="product-side-actions">
@@ -122,5 +94,48 @@
             </div>
         </section>
     </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>
+                <div class="footer-brand">
+                    <img class="site-logo" src="{% static 'images/site-logo.png' %}" alt="USeP Marketplace Logo">
+                    <span>USeP Marketplace</span>
+                </div>
+                <p>Campus essentials, study tools, and local services made easy.</p>
+            </div>
+            <div>
+                <h4>Explore</h4>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#">Shop</a></li>
+                    <li><a href="#">Services</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Account</h4>
+                <ul>
+                    <li><a href="#">Profile</a></li>
+                    <li><a href="#">Cart</a></li>
+                    <li><a href="#">Orders</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>Company</h4>
+                <ul>
+                    <li><a href="#">About</a></li>
+                    <li><a href="#">Contact</a></li>
+                    <li><a href="#">Privacy</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>© 2026 USeP Marketplace</span>
+        </div>
+    </footer>
+
+    <button id="back-to-top" class="back-to-top" type="button" aria-label="Back to top">
+        <i class="bi bi-arrow-up"></i>
+    </button>
 </div>
 {% endblock %}

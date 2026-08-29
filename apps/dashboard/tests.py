@@ -22,3 +22,9 @@ class BuyerDashboardViewsTests(TestCase):
     def test_buyer_cart_page_loads(self):
         response = self.client.get(reverse('dashboard:buyer_cart'))
         self.assertEqual(response.status_code, 200)
+
+    def test_buyer_detail_has_multiple_gallery_images(self):
+        response = self.client.get(reverse('dashboard:buyer_detail', args=['engineering-mechanics-textbook']))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('images', response.context['item'])
+        self.assertGreaterEqual(len(response.context['item']['images']), 2)

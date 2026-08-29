@@ -1,12 +1,25 @@
 {% load static %}
 
 <nav id="navbar">
+    <button type="button" id="categories-menu-btn" class="hamburger-btn" aria-label="Toggle categories menu" aria-expanded="false" aria-controls="categories-menu">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
     <a href="{% url 'dashboard:seller' %}" class="navbar-brand">
         <img class="site-logo" src="{% static 'images/site-logo.png' %}" alt="USeP Marketplace Logo">
         <span class="navbar-site-name">USeP Marketplace</span>
     </a>
 
-    <form class="navbar-search" method="get">
+    <div class="navbar-links" aria-label="Main navigation">
+        <a href="{% url 'dashboard:buyer' %}" class="nav-link active">Home</a>
+        <a href="{% url 'dashboard:buyer' %}" class="nav-link">Shop</a>
+        <a href="{% url 'dashboard:buyer' %}" class="nav-link">Services</a>
+    </div>
+
+    <form class="navbar-search" method="get" action="{% url 'dashboard:buyer' %}">
+        <i class="bi bi-search"></i>
         <input
             class="form-control"
             type="search"
@@ -14,13 +27,16 @@
             placeholder="Search products, services..."
             value="{{ request.GET.q }}"
             autocomplete="off"
+            aria-label="Search products or services"
         >
-        <button type="submit" aria-label="Search">
-            <i class="bi bi-search"></i>
-        </button>
     </form>
 
     <div class="navbar-actions">
+        <a href="{% url 'dashboard:buyer_cart' %}" class="navbar-icon-btn cart-link" aria-label="Cart">
+            <i class="bi bi-cart3"></i>
+            <span id="navbar-cart-badge" class="navbar-badge">0</span>
+        </a>
+
         {% if request.user.is_authenticated %}
         <button type="button" class="navbar-icon-btn" aria-label="Messages">
             <i class="bi bi-chat-dots"></i>
@@ -72,4 +88,21 @@
         {% endif %}
     </div>
 </nav>
+
+<div id="categories-menu" class="categories-menu" aria-hidden="true">
+    <div class="categories-menu-content">
+        <h3>Browse Categories</h3>
+        <ul class="categories-menu-list">
+            {% for category in categories %}
+                <li>
+                    <a href="{% url 'dashboard:buyer' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}">
+                        {{ category.label }}
+                        <span class="category-count">{{ category.count }}</span>
+                    </a>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
 <script src="{% static 'js/navbar.js' %}"></script>

@@ -12,40 +12,36 @@
 .dashboard-banner {
     position: relative;
     overflow: hidden;
-    padding: 1.6rem 1.8rem;
-    background: var(--color-primary-dark);
-    border-radius: 0.75rem;
-    color: var(--color-surface);
-    box-shadow: 0 10px 24px rgba(127, 29, 29, 0.16);
+    padding: 1.8rem 2rem;
+    background: linear-gradient(135deg, #f4efe9 0%, #f7f7f7 45%, #eef5ff 100%);
+    border: 1px solid rgba(15, 23, 42, 0.09);
+    border-radius: 1.2rem;
+    color: var(--color-text);
+    box-shadow: none;
 }
 .dashboard-banner::after {
-    position: absolute;
-    right: -2rem;
-    bottom: -4rem;
-    width: 150px;
-    height: 150px;
-    border: 16px solid var(--color-secondary);
-    border-radius: 50%;
-    opacity: 0.8;
-    content: "";
+    content: none;
 }
 .dashboard-banner h1 {
     position: relative;
     z-index: 1;
-    color: var(--color-surface);
-    font-size: clamp(2.2rem, 5vw, 3.8rem);
-    letter-spacing: -0.02em;
+    color: var(--color-text);
+    font-size: clamp(2.3rem, 5vw, 4rem);
+    letter-spacing: -0.04em;
+    line-height: 0.98;
 }
 .dashboard-banner .eyebrow {
     position: relative;
     z-index: 1;
-    color: var(--color-secondary-light);
+    color: #d97706;
+    font-weight: 700;
+    letter-spacing: 0.02em;
 }
 .dashboard-banner p:not(.eyebrow) {
     position: relative;
     z-index: 1;
     margin-top: 0.6rem;
-    color: #fee2e2;
+    color: #4b5563;
 }
 .dashboard-banner .btn,
 .dashboard-banner .status-pill {

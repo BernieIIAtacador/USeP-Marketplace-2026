@@ -1,4 +1,39 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const mainImage = document.querySelector('.detail-image');
+    const thumbs = document.querySelectorAll('.thumb');
+
+    if (mainImage && thumbs.length) {
+        const updateMainImage = (src) => {
+            mainImage.style.backgroundImage = `url('${src}')`;
+            thumbs.forEach((thumb) => {
+                const isActive = thumb.dataset.image === src;
+                thumb.classList.toggle('active', isActive);
+            });
+        };
+
+        thumbs.forEach((thumb) => {
+            thumb.addEventListener('click', () => updateMainImage(thumb.dataset.image));
+        });
+    }
+
+    const backToTopButton = document.getElementById('back-to-top');
+
+    if (backToTopButton) {
+        const toggleBackToTop = () => {
+            if (window.scrollY > 400) {
+                backToTopButton.classList.add('visible');
+            } else {
+                backToTopButton.classList.remove('visible');
+            }
+        };
+
+        window.addEventListener('scroll', toggleBackToTop, { passive: true });
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        toggleBackToTop();
+    }
+
     const savedKey = 'usep-marketplace-saved-items';
 
     const getSavedItems = () => {
@@ -23,15 +58,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const savedItems = getSavedItems();
         const savedList = document.getElementById('saved-items-list');
         const savedCount = document.getElementById('saved-count');
-        const cartBadge = document.getElementById('cart-badge');
+        const navbarCartBadge = document.getElementById('navbar-cart-badge');
         const cartPageList = document.getElementById('cart-page-items');
 
         if (savedCount) {
             savedCount.textContent = String(savedItems.length);
         }
 
-        if (cartBadge) {
-            cartBadge.textContent = String(savedItems.length);
+        if (navbarCartBadge) {
+            navbarCartBadge.textContent = String(savedItems.length);
         }
 
         if (savedList) {
