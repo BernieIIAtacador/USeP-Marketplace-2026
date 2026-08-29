@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Buy on USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/buyer-dashboard.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/buyer-dashboard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="buyer-shell dashboard-shell">
+    {% include 'components/navbar.html' %}
+
+    <main class="buyer-main dashboard-main container">
+        <section class="buyer-hero dashboard-banner">
+            <div>
+                <p class="eyebrow">USeP marketplace</p>
+                <h1>Find what you need around campus</h1>
+                <p>Browse trusted listings for study essentials, dorm items, services, and local deals.</p>
+            </div>
+            <a href="{% url 'dashboard:seller' %}" class="btn btn-secondary" type="button">Sell something</a>
+        </section>
+
+        <section class="buyer-toolbar panel">
+            <div class="toolbar-group">
+                {% for category in categories %}
+                    <a
+                        href="{% url 'dashboard:buyer' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                        class="chip {% if selected_category == category.slug %}chip-active{% endif %}"
+                    >
+                        {{ category.label }}
+                    </a>
+                {% endfor %}
+            </div>
+            <div class="toolbar-right toolbar-group">
+                <a href="{% url 'dashboard:buyer_cart' %}" class="toolbar-action cart-button" id="cart-button">
+                    <i class="bi bi-cart3"></i>
+                    Cart
+                    <span id="cart-badge" class="cart-badge">0</span>
+                </a>
+            </div>
+        </section>
+
+        <section class="buyer-layout">
+            <aside class="buyer-sidebar panel">
+                <div class="side-header">
+                    <h2>Categories</h2>
+                </div>
+
+                <ul class="side-list">
+                    {% for category in categories %}
+                        <li>
+                            <a
+                                href="{% url 'dashboard:buyer' %}?category={{ category.slug }}{% if query %}&q={{ query|urlencode }}{% endif %}"
+                                class="side-link {% if selected_category == category.slug %}active{% endif %}"
+                            >
+                                <span>{{ category.label }}</span>
+                                <strong>{{ category.count }}</strong>
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="mini-card">
+                    <p class="eyebrow">Featured</p>
+                    <h3>Campus essentials</h3>
+                    <p>Fresh deals from students and local sellers near your building.</p>
+                </div>
+            </aside>
+
+            <div class="buyer-feed">
+                <div class="feed-header">
+                    <div>
+                        <p class="eyebrow">Fresh listings</p>
+                        <h2>Recommended for you</h2>
+                    </div>
+                    <form method="get" action="{% url 'dashboard:buyer' %}" class="buyer-search-form">
+                        <input type="search" name="q" value="{{ query }}" placeholder="Search products or services" aria-label="Search products or services">
+                        {% if selected_category and selected_category != 'all' %}
+                            <input type="hidden" name="category" value="{{ selected_category }}">
+                        {% endif %}
+                        <button type="submit" class="btn btn-outline">Search</button>
+                    </form>
+                </div>
+
+                <div class="product-grid">
+                    {% for item in items %}
+                        <article class="product-card" data-item-slug="{{ item.slug }}" data-item-title="{{ item.title }}" data-item-price="{{ item.price_label }}" data-item-seller="{{ item.seller }}">
+                            <a class="product-image-link" href="{% url 'dashboard:buyer_detail' item.slug %}{% if query %}?q={{ query|urlencode }}{% endif %}{% if selected_category and selected_category != 'all' %}{% if query %}&{% else %}?{% endif %}category={{ selected_category }}{% endif %}">
+                                <div class="product-image" style="background-image: url('{{ item.image_url }}'); background-size: cover; background-position: center;"></div>
+                            </a>
+                            <div class="product-content">
+                                <div class="product-meta-row">
+                                    <span class="product-price">{{ item.price_label }}</span>
+                                    <button class="save-btn" type="button" data-item-slug="{{ item.slug }}" data-item-title="{{ item.title }}" data-item-price="{{ item.price_label }}" data-item-seller="{{ item.seller }}" aria-label="Add to cart">
+                                        <i class="bi bi-cart3"></i>
+                                    </button>
+                                </div>
+                                <h3><a href="{% url 'dashboard:buyer_detail' item.slug %}{% if query %}?q={{ query|urlencode }}{% endif %}{% if selected_category and selected_category != 'all' %}{% if query %}&{% else %}?{% endif %}category={{ selected_category }}{% endif %}" class="product-title-link">{{ item.title }}</a></h3>
+                                <p>{{ item.condition }} • {{ item.location }}</p>
+                                <div class="product-footer">
+                                    <span class="seller-tag">{{ item.seller }}</span>
+                                    <span class="view-count"><i class="bi bi-eye"></i> {{ item.views }}</span>
+                                </div>
+                                <div class="product-side-actions">
+                                    <button type="button" class="mini-message-btn" data-item-title="{{ item.title }}" data-item-seller="{{ item.seller }}">Message seller</button>
+                                </div>
+                            </div>
+                        </article>
+                    {% empty %}
+                        <div class="no-results panel">
+                            <h3>No listings match your search.</h3>
+                            <p>Try another keyword or switch to a different category.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

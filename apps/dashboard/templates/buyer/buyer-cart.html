@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Saved items | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/buyer-dashboard.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/buyer-dashboard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="buyer-shell dashboard-shell">
+    {% include 'components/navbar.html' %}
+
+    <main class="container cart-page">
+        <div class="cart-page-header">
+            <h1>Saved items</h1>
+            <a href="{% url 'dashboard:buyer' %}" class="btn btn-outline">Continue shopping</a>
+        </div>
+
+        <section class="cart-page-list" id="cart-page-items">
+            <div class="empty-cart-state">
+                <h3>Your cart is empty.</h3>
+                <p>Save listings from the marketplace to see them here.</p>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}

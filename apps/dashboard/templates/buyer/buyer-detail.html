@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ item.title }} | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/buyer-dashboard.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/buyer-dashboard.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="buyer-shell dashboard-shell">
+    {% include 'components/navbar.html' %}
+
+    <main class="buyer-detail-main dashboard-main container">
+        <div class="detail-back-link-wrap">
+            <a href="{% url 'dashboard:buyer' %}{% if query %}?q={{ query|urlencode }}{% endif %}{% if selected_category and selected_category != 'all' %}{% if query %}&{% else %}?{% endif %}category={{ selected_category }}{% endif %}" class="detail-back-link">
+                <i class="bi bi-arrow-left"></i> Back to listings
+            </a>
+        </div>
+
+        <section class="detail-layout">
+            <div class="detail-gallery panel">
+                <div class="detail-image" style="background-image: url('{{ item.image_url }}'); background-size: cover; background-position: center;"></div>
+                <div class="thumbnail-row">
+                    <span class="thumb dot-1"></span>
+                    <span class="thumb dot-2"></span>
+                    <span class="thumb dot-3"></span>
+                </div>
+            </div>
+
+            <aside class="detail-card panel">
+                <span class="detail-category">{{ item.category }}</span>
+                <h1>{{ item.title }}</h1>
+                <div class="detail-price-row">
+                    <span class="detail-price">{{ item.price_label }}</span>
+                </div>
+
+                <div class="detail-meta-box">
+                    <div><span>Condition</span><strong>{{ item.condition }}</strong></div>
+                    <div><span>Location</span><strong>{{ item.location }}</strong></div>
+                    <div><span>Seller</span><strong>{{ item.seller }}</strong></div>
+                </div>
+
+                <button class="btn btn-primary detail-action" type="button">Message seller</button>
+                <button
+                    class="btn btn-outline detail-action save-item-btn"
+                    type="button"
+                    data-item-slug="{{ item.slug }}"
+                    data-item-title="{{ item.title }}"
+                    data-item-price="{{ item.price_label }}"
+                    data-item-seller="{{ item.seller }}"
+                >
+                    Add to cart
+                </button>
+            </aside>
+        </section>
+
+        <section class="detail-info panel">
+            <div class="detail-copy">
+                <p class="eyebrow">Description</p>
+                <p>{{ item.description }}</p>
+            </div>
+
+            <div class="detail-highlights-wrap">
+                <p class="eyebrow">Highlights</p>
+                <ul class="detail-highlights">
+                    {% for highlight in item.highlights %}
+                        <li>{{ highlight }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+    </main>
+</div>
+{% endblock %}
