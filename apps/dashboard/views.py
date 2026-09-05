@@ -1,5 +1,14 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+
+from apps.accounts.models import User
+
+from .forms import ListingForm, MessageForm
+from .models import Category, Conversation, Listing, ListingImage, Message, SavedItem
 
 
 SELLERS = {
@@ -427,3 +436,324 @@ def setup_buyer_item_detail(request, item_slug):
 
 def setup_buyer_cart(request):
     return render(request, 'buyer/buyer-cart.html')
+
+
+def _category_context():
+    categories = Category.objects.all()
+    return [
+        {
+            'id': category.id,
+            'label': category.name,
+            'slug': category.slug,
+            'count': Listing.objects.filter(
+                category=category,
+                status=Listing.Status.ACTIVE,
+            ).count(),
+        }
+        for category in categories
+    ]
+
+
+def _seller_profile(user):
+    role = 'Marketplace seller'
+    if hasattr(user, 'staff_profile'):
+        role = user.staff_profile.get_staff_type_display()
+    elif hasattr(user, 'student_profile'):
+        role = 'Student seller'
+    return {
+        'id': user.pk,
+        'name': f'{user.first_name} {user.last_name}'.strip() or user.email,
+        'role': role,
+        'avatar': user.profile_picture.url if user.profile_picture else '',
+    }
+
+
+@login_required
+def setup_seller_dashboard(request):
+    if not request.user.is_seller:
+        return redirect('dashboard:buyer')
+
+    listings = Listing.objects.filter(seller=request.user).select_related('category')
+    active_listings = listings.filter(status=Listing.Status.ACTIVE)
+    context = {
+        'listings': listings,
+        'listing_form': ListingForm(),
+        'categories': _category_context(),
+        'active_count': active_listings.count(),
+        'total_views': sum(listing.views for listing in listings),
+        'sold_count': listings.filter(status=Listing.Status.SOLD).count(),
+        'manage_listing_id': request.GET.get('manage'),
+    }
+    return render(request, 'seller/seller-dashboard.html', context)
+
+
+@login_required
+def become_seller(request):
+    request.user.is_seller = True
+    request.user.save(update_fields=['is_seller'])
+    messages.success(request, 'Seller tools are now enabled for your account.')
+    return redirect('dashboard:seller')
+
+
+@login_required
+def create_listing(request):
+    if not request.user.is_seller:
+        return redirect('dashboard:buyer')
+
+    if request.method != 'POST':
+        return redirect('dashboard:seller')
+
+    form = ListingForm(request.POST, request.FILES)
+    if form.is_valid():
+        listing = form.save(commit=False)
+        listing.seller = request.user
+        listing.status = listing.status or Listing.Status.ACTIVE
+        listing.save()
+        uploaded_images = request.FILES.getlist('images')
+        if uploaded_images:
+            listing.image = uploaded_images[0]
+            listing.save(update_fields=['image', 'updated_at'])
+            _save_listing_images(listing, uploaded_images)
+        messages.success(request, 'Your listing has been saved.')
+    else:
+        messages.error(request, f'Listing was not saved: {form.errors.as_text()}')
+    return redirect('dashboard:seller')
+
+
+@login_required
+def edit_listing(request, listing_id):
+    if not request.user.is_seller:
+        return redirect('dashboard:buyer')
+
+    listing = get_object_or_404(Listing, pk=listing_id, seller=request.user)
+    if request.method == 'GET':
+        return render(
+            request,
+            'seller/edit-listing.html',
+            {
+                'listing': listing,
+                'listing_form': ListingForm(instance=listing),
+                'categories': _category_context(),
+            },
+        )
+
+    form = ListingForm(request.POST, instance=listing)
+    if form.is_valid():
+        form.save()
+        uploaded_images = request.FILES.getlist('images')
+        if uploaded_images:
+            _save_listing_images(listing, uploaded_images)
+        messages.success(request, 'Your listing has been updated.')
+    else:
+        messages.error(request, f'Listing was not updated: {form.errors.as_text()}')
+    return redirect(request.POST.get('next') or 'dashboard:seller')
+
+
+def _save_listing_images(listing, uploaded_images):
+    for image in uploaded_images:
+        if not listing.image:
+            listing.image = image
+            listing.save(update_fields=['image', 'updated_at'])
+        ListingImage.objects.create(listing=listing, image=image)
+
+
+@login_required
+def delete_listing(request, listing_id):
+    if not request.user.is_seller:
+        return redirect('dashboard:buyer')
+
+    if request.method == 'POST':
+        listing = get_object_or_404(Listing, pk=listing_id, seller=request.user)
+        listing.delete()
+        messages.success(request, 'The listing was deleted.')
+    return redirect('dashboard:seller')
+
+
+def setup_buyer_dashboard(request):
+    query = request.GET.get('q', '').strip()
+    category_slug = request.GET.get('category', 'all').strip().lower()
+    seller_id = request.GET.get('seller')
+    listings = Listing.objects.filter(status=Listing.Status.ACTIVE).select_related('seller', 'category')
+
+    if query:
+        listings = listings.filter(
+            Q(title__icontains=query)
+            | Q(description__icontains=query)
+            | Q(category__name__icontains=query)
+        )
+    if category_slug != 'all':
+        listings = listings.filter(category__slug=category_slug)
+
+    seller_profile = None
+    if seller_id:
+        try:
+            seller = get_object_or_404(User, pk=int(seller_id))
+            seller_profile = _seller_profile(seller)
+            listings = listings.filter(seller=seller)
+        except (TypeError, ValueError):
+            seller_profile = None
+
+    return render(
+        request,
+        'buyer/buyer-dashboard.html',
+        {
+            'items': listings,
+            'categories': _category_context(),
+            'selected_category': category_slug,
+            'query': query,
+            'category_count': listings.count(),
+            'seller_filter': seller_id,
+            'seller_profile': seller_profile,
+        },
+    )
+
+
+def setup_buyer_item_detail(request, item_slug):
+    listing = get_object_or_404(
+        Listing.objects.select_related('seller', 'category'),
+        slug=item_slug,
+    )
+    saved_by_request_user = request.user.is_authenticated and SavedItem.objects.filter(
+        buyer=request.user,
+        listing=listing,
+    ).exists()
+    if listing.status not in (Listing.Status.ACTIVE, Listing.Status.RESERVED) and listing.seller != request.user and not saved_by_request_user:
+        raise Http404('Listing not found.')
+    Listing.objects.filter(pk=listing.pk).update(views=listing.views + 1)
+    listing.views += 1
+    other_products = Listing.objects.filter(
+        seller=listing.seller,
+        status=Listing.Status.ACTIVE,
+    ).exclude(pk=listing.pk).select_related('category')
+    item_context = {
+        'id': listing.id,
+        'slug': listing.slug,
+        'title': listing.title,
+        'category': listing.category.name,
+        'price': listing.price,
+        'price_label': listing.price_label,
+        'condition': listing.condition,
+        'location': listing.location,
+        'seller_id': listing.seller_id,
+        'seller': listing.seller_name,
+		'seller_avatar': listing.seller_avatar_url,
+        'seller_role': listing.seller_role,
+        'status': listing.status,
+        'views': listing.views,
+        'image_url': listing.image_url,
+        'images': listing.gallery_urls,
+        'description': listing.description,
+    }
+    return render(
+        request,
+        'buyer/buyer-detail.html',
+        {
+            'item': item_context,
+            'seller_info': _seller_profile(listing.seller),
+			'can_edit': request.user.is_authenticated and request.user.id == listing.seller_id,
+            'other_products': other_products,
+            'categories': _category_context(),
+            'selected_category': listing.category.slug,
+            'query': request.GET.get('q', ''),
+            'is_saved': saved_by_request_user,
+        },
+    )
+
+
+@login_required
+def toggle_saved_item(request, item_slug):
+    listing = get_object_or_404(Listing, slug=item_slug)
+    if request.method == 'POST':
+        saved_item = SavedItem.objects.filter(buyer=request.user, listing=listing).first()
+        if saved_item:
+            saved_item.delete()
+            messages.info(request, 'Listing removed from your saved items.')
+        elif listing.status == Listing.Status.ACTIVE:
+            SavedItem.objects.create(buyer=request.user, listing=listing)
+            messages.success(request, 'Listing saved for later.')
+        else:
+            messages.error(request, 'This product is no longer available.')
+    return redirect(request.POST.get('next') or listing.get_absolute_url())
+
+
+@login_required
+def setup_buyer_cart(request):
+    saved_items = SavedItem.objects.filter(buyer=request.user).select_related(
+        'listing', 'listing__seller', 'listing__category',
+    )
+    return render(
+        request,
+        'buyer/buyer-cart.html',
+        {
+            'saved_items': saved_items,
+            'active_saved_items': saved_items.exclude(listing__status=Listing.Status.SOLD),
+            'sold_saved_items': saved_items.filter(listing__status=Listing.Status.SOLD),
+            'categories': _category_context(),
+        },
+    )
+
+
+@login_required
+def start_conversation(request, item_slug):
+    listing = get_object_or_404(Listing, slug=item_slug)
+    if listing.seller_id == request.user.id:
+        messages.error(request, 'You cannot message yourself about your own listing.')
+        return redirect(listing.get_absolute_url())
+    conversation, _ = Conversation.objects.get_or_create(
+        buyer=request.user,
+        seller=listing.seller,
+        listing=listing,
+    )
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.conversation = conversation
+            message.sender = request.user
+            message.save()
+            conversation.save(update_fields=['updated_at'])
+            messages.success(request, 'Message sent to the seller.')
+    return redirect('dashboard:conversation', conversation_id=conversation.pk)
+
+
+@login_required
+def conversation_list(request):
+    conversations = Conversation.objects.filter(
+        Q(buyer=request.user) | Q(seller=request.user)
+    ).select_related('buyer', 'seller', 'listing')
+    return render(
+        request,
+        'dashboard/conversations.html',
+        {'conversations': conversations, 'categories': _category_context()},
+    )
+
+
+@login_required
+def conversation_detail(request, conversation_id):
+    conversation = get_object_or_404(
+        Conversation.objects.select_related('buyer', 'seller', 'listing'),
+        Q(buyer=request.user) | Q(seller=request.user),
+        pk=conversation_id,
+    )
+    if request.method == 'POST':
+        form = MessageForm(request.POST)
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.conversation = conversation
+            message.sender = request.user
+            message.save()
+            conversation.save(update_fields=['updated_at'])
+            return redirect('dashboard:conversation', conversation_id=conversation.pk)
+    else:
+        form = MessageForm()
+    conversation.messages.exclude(sender=request.user).filter(is_read=False).update(is_read=True)
+    return render(
+        request,
+        'dashboard/conversation-detail.html',
+        {
+            'conversation': conversation,
+            'messages': conversation.messages.select_related('sender'),
+            'message_form': form,
+            'categories': _category_context(),
+        },
+    )

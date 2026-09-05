@@ -153,6 +153,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         choices=Roles.choices,
         default=Roles.USER
     )
+    is_seller = models.BooleanField(default=False)
 
     # Django permissions
     is_active = models.BooleanField(default=True)

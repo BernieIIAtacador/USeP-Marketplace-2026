@@ -26,6 +26,9 @@
     flex-shrink: 0;
     object-fit: cover;
     border-radius: 50%;
+    max-width: none;
+    object-position: center;
+    clip-path: circle(50%);
     border: 3px solid rgba(255, 255, 255, 0.6);
 }
 
@@ -103,6 +106,9 @@
     height: 88px;
     object-fit: cover;
     border-radius: 50%;
+    max-width: none;
+    object-position: center;
+    clip-path: circle(50%);
     border: 3px solid rgba(255, 255, 255, 0.6);
 }
 

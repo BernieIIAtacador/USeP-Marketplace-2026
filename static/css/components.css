@@ -619,6 +619,89 @@
     flex-shrink: 0;
 }
 
+/* Focused presentation for the temporary chat placeholder. */
+.chat-coming-soon-modal {
+    background: rgba(15, 23, 42, 0.58);
+    backdrop-filter: blur(4px);
+}
+
+.chat-coming-soon-modal .modal-dialog {
+    position: relative;
+    width: min(100%, 430px);
+    padding: 2.25rem 2rem 2rem;
+    border: 1px solid rgba(24, 119, 242, 0.12);
+    border-radius: 1.25rem;
+    background: linear-gradient(145deg, #ffffff 0%, #f7fbff 100%);
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+    text-align: center;
+    animation: chat-modal-in 0.2s ease-out;
+}
+
+.chat-coming-soon-modal .modal-dialog > * + * {
+    margin-top: 0.8rem;
+}
+
+.chat-coming-soon-close {
+    position: absolute;
+    top: 0.85rem;
+    right: 0.85rem;
+}
+
+.chat-coming-soon-icon {
+    display: grid;
+    place-items: center;
+    width: 4.25rem;
+    height: 4.25rem;
+    margin: 0 auto;
+    border: 8px solid #e7f3ff;
+    border-radius: 50%;
+    background: #1877f2;
+    color: #ffffff;
+    font-size: 1.65rem;
+    box-shadow: 0 8px 18px rgba(24, 119, 242, 0.22);
+}
+
+.chat-coming-soon-eyebrow {
+    margin: 0;
+    color: #1877f2;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.chat-coming-soon-modal h2 {
+    margin: 0;
+    color: #1c1e21;
+    font-size: 1.55rem;
+}
+
+.chat-coming-soon-copy {
+    max-width: 30rem;
+    margin: 0 auto;
+    color: #65676b;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.chat-coming-soon-action {
+    width: 100%;
+    margin-top: 0.4rem;
+    border-radius: 0.65rem;
+    font-weight: 700;
+}
+
+@keyframes chat-modal-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 520px) {
+    .chat-coming-soon-modal .modal-dialog {
+        padding: 2rem 1.25rem 1.25rem;
+    }
+}
+
 #profile-toggle {
     display: flex;
     align-items: center;
@@ -638,6 +721,9 @@
     height: 40px;
 
     object-fit: cover;
+    max-width: none;
+    object-position: center;
+    clip-path: circle(50%);
     border-radius: 50%;
 
     border: 2px solid rgba(255, 255, 255, 0.5);
@@ -689,6 +775,9 @@
     height: 48px;
 
     object-fit: cover;
+    max-width: none;
+    object-position: center;
+    clip-path: circle(50%);
     border-radius: 50%;
 
     flex-shrink: 0;

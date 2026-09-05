@@ -5,11 +5,8 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
-<link rel="stylesheet" href="{% static 'css/buyer-dashboard.css' %}">
-{% endblock %}
-
-{% block extra_js %}
-<script src="{% static 'js/buyer-dashboard.js' %}"></script>
+<link rel="stylesheet" href="{% static 'css/buyer-dashboard.css' %}?v=20260905-5">
+<link rel="stylesheet" href="{% static 'css/seller-dashboard.css' %}?v=20260905-3">
 {% endblock %}
 
 {% block content %}
@@ -26,11 +23,11 @@
         <section class="detail-layout">
             <div class="detail-gallery panel">
                 <div class="detail-image-frame">
-                    <div class="detail-image" style="background-image: url('{{ item.images.0|default:item.image_url }}'); background-size: cover; background-position: center;"></div>
+                    <div class="detail-image" style="background-image: url('{{ item.image_url }}'); background-size: cover; background-position: center;"></div>
                 </div>
                 <div class="thumbnail-row" aria-label="Product gallery thumbnails">
-                    {% for image in item.images|default:item.image_url %}
-                        <button type="button" class="thumb {% if forloop.first %}active{% endif %}" data-image="{{ image }}" style="background-image: url('{{ image }}'); background-size: cover; background-position: center;" aria-label="View product image {{ forloop.counter }}"></button>
+                    {% for image in item.images %}
+                    <button type="button" class="thumb {% if forloop.first %}active{% endif %}" data-image="{{ image }}" style="background-image: url('{{ image }}'); background-size: cover; background-position: center;" aria-label="View product image {{ forloop.counter }}"></button>
                     {% endfor %}
                 </div>
             </div>
@@ -47,28 +44,28 @@
                     <div><span>Location</span><strong>{{ item.location }}</strong></div>
                 </div>
 
-                <button class="btn btn-primary detail-action" type="button">Message seller</button>
-                <button
-                    class="btn btn-outline detail-action save-item-btn"
-                    type="button"
-                    data-item-slug="{{ item.slug }}"
-                    data-item-title="{{ item.title }}"
-                    data-item-price="{{ item.price_label }}"
-                    data-item-seller="{{ item.seller }}"
-                >
-                    Add to cart
-                </button>
+                {% if request.user.is_authenticated %}
+                <button class="btn btn-primary detail-action chat-coming-soon" type="button">Message seller</button>
+                <form method="post" action="{% url 'dashboard:toggle_saved_item' item.slug %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button class="btn btn-outline detail-action" type="submit">{% if is_saved %}Remove from cart{% else %}Add to cart{% endif %}</button>
+                </form>
+                {% else %}
+                <button class="btn btn-primary detail-action chat-coming-soon" type="button">Message seller</button>
+                {% endif %}
+                {% if can_edit %}
+                <button class="btn btn-outline detail-action" type="button" id="open-detail-edit">Edit listing</button>
+                {% endif %}
             </aside>
         </section>
 
         <section class="seller-profile panel">
             <div class="seller-profile-content">
-                <div class="seller-avatar" aria-label="Seller profile picture placeholder">
-                    <i class="bi bi-person-circle"></i>
-                </div>
+                <div class="seller-profile-avatar"><img src="{{ seller_info.avatar|default:'/static/images/default-avatar.png' }}" alt="{{ seller_info.name }} profile picture"></div>
                 <div class="seller-profile-info">
-                    <strong class="seller-name">{{ item.seller }}</strong>
-                    <small class="seller-role">{{ item.seller_role }}</small>
+                    <strong class="seller-name">{{ seller_info.name }}</strong>
+                    <small class="seller-role">{{ seller_info.role }}</small>
                 </div>
                 {% if other_products %}
                 <a href="{% url 'dashboard:buyer' %}?seller={{ item.seller_id }}" class="btn btn-sm btn-outline other-products-btn">
@@ -95,4 +92,42 @@
         </section>
     </main>
 </div>
+
+{% if can_edit %}
+<div class="modal-overlay" id="detail-edit-modal" hidden>
+    <div class="modal-dialog modal-dialog-wide">
+        <div class="modal-header">
+            <h2>Manage item</h2>
+            <button class="modal-close" type="button" id="close-detail-edit" aria-label="Close">&times;</button>
+        </div>
+        <form class="manage-layout" method="post" action="{% url 'dashboard:edit_listing' item.id %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <section class="preview-panel">
+                <img src="{{ item.image_url }}" alt="{{ item.title }}">
+                <label class="change-photo" for="detail-edit-images">Add more photos</label>
+                <input class="image-input" name="images" id="detail-edit-images" type="file" accept="image/*" multiple>
+                <div class="preview-stats"><span>Listing views</span><strong>{{ item.views }}</strong></div>
+            </section>
+            <section class="edit-panel">
+                <div class="form-group"><label class="form-label" for="detail-edit-title">Item name</label><input class="form-control" name="title" id="detail-edit-title" value="{{ item.title }}" required></div>
+                <div class="field-row">
+                    <div class="form-group"><label class="form-label" for="detail-edit-category">Category</label><select class="form-control" name="category" id="detail-edit-category">{% for category in categories %}<option value="{{ category.id }}" {% if category.slug == selected_category %}selected{% endif %}>{{ category.label }}</option>{% endfor %}</select></div>
+                    <div class="form-group"><label class="form-label" for="detail-edit-price">Price</label><input class="form-control" name="price" id="detail-edit-price" type="number" min="0" step="0.01" value="{{ item.price }}" required></div>
+                </div>
+                <div class="form-group"><label class="form-label" for="detail-edit-condition">Condition or availability</label><input class="form-control" name="condition" id="detail-edit-condition" value="{{ item.condition }}" required></div>
+                <div class="form-group"><label class="form-label" for="detail-edit-location">Meetup location</label><input class="form-control" name="location" id="detail-edit-location" value="{{ item.location }}"></div>
+                <div class="form-group"><label class="form-label" for="detail-edit-description">Description</label><textarea class="form-control" name="description" id="detail-edit-description" rows="4" required>{{ item.description }}</textarea></div>
+                <div class="status-actions"><label class="form-label" for="detail-edit-status">Listing status</label><select class="status-select" name="status" id="detail-edit-status"><option value="ACTIVE" {% if item.status == 'ACTIVE' %}selected{% endif %}>Available</option><option value="SOLD" {% if item.status == 'SOLD' %}selected{% endif %}>Sold</option><option value="ARCHIVED" {% if item.status == 'ARCHIVED' %}selected{% endif %}>Unavailable</option></select></div>
+                <div class="form-actions"><button class="btn btn-outline" type="button" id="cancel-detail-edit">Cancel</button><button class="btn btn-primary" type="submit">Save changes</button></div>
+            </section>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/buyer-dashboard.js' %}?v=20260905-4"></script>
+{% if can_edit %}<script src="{% static 'js/detail-edit-modal.js' %}?v=20260905-1"></script>{% endif %}
 {% endblock %}

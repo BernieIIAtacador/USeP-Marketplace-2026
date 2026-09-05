@@ -313,7 +313,7 @@ def setup_change_password_view(request):
         messages.success(request, "Your password has been changed successfully.")
 
         if was_first_login:
-            return redirect("dashboard:seller")
+            return redirect_user(request.user)
         return redirect("profile")
 
     return render(request, "password/change-password.html")
@@ -330,7 +330,7 @@ def redirect_user(user):
     if user.is_first_login:
         return redirect("change_password")
 
-    return redirect("dashboard:seller")
+    return redirect("dashboard:buyer")
 
 def setup_forgot_password_view(request):
 

@@ -7,7 +7,7 @@
         <span></span>
     </button>
 
-    <a href="{% url 'dashboard:seller' %}" class="navbar-brand">
+    <a href="{% if request.user.is_authenticated and request.user.is_seller %}{% url 'dashboard:seller' %}{% else %}{% url 'dashboard:buyer' %}{% endif %}" class="navbar-brand">
         <img class="site-logo" src="{% static 'images/site-logo.png' %}" alt="USeP Marketplace Logo">
         <span class="navbar-site-name">USeP Marketplace</span>
     </a>
@@ -16,6 +16,9 @@
         <a href="{% url 'dashboard:buyer' %}" class="nav-link active">Home</a>
         <a href="{% url 'dashboard:buyer' %}" class="nav-link">Shop</a>
         <a href="{% url 'dashboard:buyer' %}" class="nav-link">Services</a>
+        {% if request.user.is_authenticated and request.user.is_seller %}
+        <a href="{% url 'dashboard:seller' %}" class="nav-link">My products</a>
+        {% endif %}
     </div>
 
     <form class="navbar-search" method="get" action="{% url 'dashboard:buyer' %}">
@@ -34,13 +37,12 @@
     <div class="navbar-actions">
         <a href="{% url 'dashboard:buyer_cart' %}" class="navbar-icon-btn cart-link" aria-label="Cart">
             <i class="bi bi-cart3"></i>
-            <span id="navbar-cart-badge" class="navbar-badge">0</span>
+            <span id="navbar-cart-badge" class="navbar-badge">{% if request.user.is_authenticated %}{{ request.user.saved_items.count }}{% else %}0{% endif %}</span>
         </a>
 
         {% if request.user.is_authenticated %}
-        <button type="button" class="navbar-icon-btn" aria-label="Messages">
+        <button type="button" class="navbar-icon-btn chat-coming-soon" aria-label="Messages">
             <i class="bi bi-chat-dots"></i>
-            <span class="navbar-badge">3</span>
         </button>
         {% endif %}
 

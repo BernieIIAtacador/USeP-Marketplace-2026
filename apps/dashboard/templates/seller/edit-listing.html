@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit {{ listing.title }} | USeP Marketplace{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+<link rel="stylesheet" href="{% static 'css/seller-dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="seller-shell dashboard-shell">
+    {% include 'components/navbar.html' %}
+    <main class="seller-main dashboard-main container">
+        <a class="detail-back-link" href="{% url 'dashboard:seller' %}"><i class="bi bi-arrow-left"></i> Back to seller dashboard</a>
+        <section class="dashboard-banner">
+            <p class="eyebrow">Manage inventory</p>
+            <h1>Edit listing</h1>
+            <p>Update the details buyers see for this listing.</p>
+        </section>
+
+        <form class="add-form-panel" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {% for field in listing_form %}
+                <div class="form-group">
+                    <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<small class="form-error">{{ error }}</small>{% endfor %}
+                </div>
+            {% endfor %}
+            <div class="form-actions">
+                <a class="btn btn-outline" href="{% url 'dashboard:seller' %}">Cancel</a>
+                <button class="btn btn-primary" type="submit">Save changes</button>
+            </div>
+        </form>
+    </main>
+</div>
+{% endblock %}
