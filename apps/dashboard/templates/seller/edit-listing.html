@@ -21,6 +21,15 @@
 
         <form class="add-form-panel" method="post" enctype="multipart/form-data">
             {% csrf_token %}
+            <section class="edit-listing-gallery">
+                <h2>Listing photos</h2>
+                <div class="manage-gallery edit-gallery" aria-label="Uploaded listing photos">
+                    {% for image in listing.listing_images.all %}<div class="manage-gallery-item"><img src="{{ image.image.url }}" alt="{{ listing.title }} photo {{ forloop.counter }}"><button type="button" class="remove-gallery-image" data-image-id="{{ image.id }}" aria-label="Remove photo">&times;</button></div>{% empty %}<p class="empty-gallery">No photos uploaded yet.</p>{% endfor %}
+                </div>
+                <label class="change-photo" for="edit-listing-images">Add more photos</label>
+                <input class="image-input" name="images" id="edit-listing-images" type="file" accept="image/*" multiple>
+                <div id="edit-removed-images"></div>
+            </section>
             {% for field in listing_form %}
                 <div class="form-group">
                     <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
@@ -36,3 +45,5 @@
     </main>
 </div>
 {% endblock %}
+
+{% block extra_js %}<script src="{% static 'js/edit-listing-gallery.js' %}?v=20260906-2"></script>{% endblock %}

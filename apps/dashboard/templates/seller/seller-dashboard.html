@@ -45,7 +45,7 @@
                 <article class="seller-listing" data-status="{{ listing.status|lower }}" data-search="{{ listing.title|lower }} {{ listing.category.name|lower }} {{ listing.description|lower }}"
                     data-name="{{ listing.title }}" data-category="{{ listing.category.name }}" data-category-id="{{ listing.category_id }}" data-condition="{{ listing.condition }}"
                     data-price="{{ listing.price }}" data-price-label="{{ listing.price_label }}" data-status-value="{{ listing.status }}" data-status-label="{{ listing.get_status_display }}" data-views="{{ listing.views }}"
-                    data-image="{{ listing.image_url }}" data-description="{{ listing.description }}" data-location="{{ listing.location }}"
+                    data-image="{{ listing.image_url }}" data-gallery="{{ listing.gallery_urls|join:'||' }}" data-gallery-ids="{{ listing.gallery_image_ids|join:'||' }}" data-description="{{ listing.description }}" data-location="{{ listing.location }}"
                     data-edit-url="{% url 'dashboard:edit_listing' listing.id %}" data-delete-url="{% url 'dashboard:delete_listing' listing.id %}">
                     <img src="{{ listing.image_url }}" alt="{{ listing.title }}">
                     <div class="seller-listing-info"><span class="status-pill status-pill-{{ listing.status|lower }}">{% if listing.status == 'ARCHIVED' %}Unavailable{% else %}{{ listing.get_status_display }}{% endif %}</span><h3>{{ listing.title }}</h3><p>{{ listing.category.name }}</p></div>
@@ -70,7 +70,7 @@
             <section class="add-form-panel">
                 <div class="form-group"><label class="form-label" for="listing-name">Item name</label><input class="form-control" name="title" id="listing-name" placeholder="e.g. Engineering textbook" required></div>
                 <div class="field-row">
-                    <div class="form-group"><label class="form-label" for="listing-category">Category</label><select class="form-control" name="category" id="listing-category" required><option value="" selected disabled>Choose a category</option>{% for category in categories %}<option value="{{ category.id }}">{{ category.label }}</option>{% endfor %}</select></div>
+                    <div class="form-group"><label class="form-label" for="listing-category">Category</label><select class="form-control" name="category" id="listing-category" required><option value="" selected disabled>Choose a category</option>{% for category in categories %}{% if category.id %}<option value="{{ category.id }}">{{ category.label }}</option>{% endif %}{% endfor %}</select></div>
                     <div class="form-group"><label class="form-label" for="listing-price">Price (PHP)</label><input class="form-control" name="price" id="listing-price" type="number" min="0" step="0.01" placeholder="0" required></div>
                 </div>
                 <div class="form-group"><label class="form-label" for="listing-condition">Condition or availability</label><select class="form-control" name="condition" id="listing-condition"><option>Like new</option><option>Barely used</option><option>Good condition</option><option>For parts</option></select></div>
@@ -78,7 +78,14 @@
                 <div class="form-group"><label class="form-label" for="listing-description">Description</label><textarea class="form-control" name="description" id="listing-description" rows="5" placeholder="Tell buyers what they should know..." required></textarea></div>
                 <div class="form-actions"><button class="btn btn-outline" type="button" data-close-modal="add-listing-modal">Cancel</button><button class="btn btn-primary" type="submit">Publish listing</button></div>
             </section>
-            <section class="upload-panel"><label class="upload-box" for="listing-image"><span class="upload-icon">+</span><strong>Upload product photos</strong><small>JPG, PNG, or WEBP, with no photo limit</small><span class="upload-action">Choose photos</span></label><input class="image-input" name="images" id="listing-image" type="file" accept="image/*" multiple><img class="image-preview" alt="Selected product preview" hidden></section>
+            <section class="upload-panel">
+                <div class="listing-photo-preview" id="listing-photo-preview" hidden>
+                    <img class="photo-preview-main" id="listing-main-image" src="" alt="Selected listing photo">
+                    <div class="manage-gallery" id="listing-gallery" aria-label="Selected listing photos"></div>
+                </div>
+                <label class="upload-box" for="listing-image"><span class="upload-icon">+</span><strong>Upload product photos</strong><small>JPG, PNG, or WEBP, with no photo limit</small><span class="upload-action">Choose photos</span></label>
+                <input class="image-input" name="images" id="listing-image" type="file" accept="image/*" multiple>
+            </section>
         </form>
     </div>
 </div>
@@ -88,10 +95,10 @@
         <div class="modal-header"><h2>Manage item</h2><span class="status-pill status-pill-active" id="manage-status-badge">Active</span><button class="modal-close" type="button" data-close-modal="manage-item-modal" aria-label="Close">&times;</button></div>
         <form class="manage-layout" id="manage-listing-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
-            <section class="preview-panel"><img id="manage-image" src="" alt=""><label class="change-photo" for="manage-item-image">Add more photos</label><input class="image-input" name="images" id="manage-item-image" type="file" accept="image/*" multiple><div class="preview-stats"><span>Listing views</span><strong id="manage-views">0</strong></div></section>
+            <section class="preview-panel"><img id="manage-image" src="" alt=""><div class="manage-gallery" id="manage-gallery" aria-label="Uploaded listing photos"></div><label class="change-photo" for="manage-item-image">Add more photos</label><input class="image-input" name="images" id="manage-item-image" type="file" accept="image/*" multiple><div id="manage-removed-images"></div><div class="preview-stats"><span>Listing views</span><strong id="manage-views">0</strong></div></section>
             <section class="edit-panel">
                 <div class="form-group"><label class="form-label" for="manage-name">Item name</label><input class="form-control" name="title" id="manage-name" required></div>
-                <div class="field-row"><div class="form-group"><label class="form-label" for="manage-category">Category</label><select class="form-control" name="category" id="manage-category">{% for category in categories %}<option value="{{ category.id }}">{{ category.label }}</option>{% endfor %}</select></div><div class="form-group"><label class="form-label" for="manage-price">Price (PHP)</label><input class="form-control" name="price" id="manage-price" type="number" min="0" step="0.01" required></div></div>
+                <div class="field-row"><div class="form-group"><label class="form-label" for="manage-category">Category</label><select class="form-control" name="category" id="manage-category">{% for category in categories %}{% if category.id %}<option value="{{ category.id }}">{{ category.label }}</option>{% endif %}{% endfor %}</select></div><div class="form-group"><label class="form-label" for="manage-price">Price (PHP)</label><input class="form-control" name="price" id="manage-price" type="number" min="0" step="0.01" required></div></div>
                 <div class="form-group"><label class="form-label" for="manage-condition">Condition or availability</label><select class="form-control" name="condition" id="manage-condition"><option>Like new</option><option>Barely used</option><option>Good condition</option><option>For parts</option><option>Available by appointment</option><option>On-site service</option></select></div>
                 <div class="form-group"><label class="form-label" for="manage-location">Meetup location</label><input class="form-control" name="location" id="manage-location"></div>
                 <div class="form-group"><label class="form-label" for="manage-description">Description</label><textarea class="form-control" name="description" id="manage-description" rows="4" required></textarea></div>
@@ -105,4 +112,4 @@
 <div class="modal-overlay" id="delete-confirm-modal" hidden><div class="modal-dialog"><h2>Delete this listing?</h2><p>This can't be undone. The listing will be removed from the marketplace.</p><div class="delete-actions"><button class="btn btn-outline" type="button" id="cancel-delete">Cancel</button><form id="delete-listing-form" method="post">{% csrf_token %}<button class="btn btn-delete" type="submit">Delete</button></form></div></div></div>
 {% endblock %}
 
-{% block extra_js %}<script>window.initialManageListingId = "{{ manage_listing_id|default:'' }}";</script><script src="{% static 'js/seller-dashboard.js' %}?v=20260905-2"></script>{% endblock %}
+{% block extra_js %}<script>window.initialManageListingId = "{{ manage_listing_id|default:'' }}";</script><script src="{% static 'js/seller-dashboard.js' %}?v=20260906-6"></script>{% endblock %}

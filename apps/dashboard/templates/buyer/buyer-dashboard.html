@@ -25,10 +25,8 @@
                 <p>Browse trusted listings for study essentials, dorm items, services, and local deals.</p>
                 <div class="hero-actions">
                     <a href="#products" class="btn btn-primary">Shop now</a>
-                    {% if request.user.is_authenticated and request.user.is_seller %}
+                    {% if request.user.is_authenticated %}
                     <a href="{% url 'dashboard:seller' %}" class="btn btn-secondary">Sell something</a>
-                    {% elif request.user.is_authenticated %}
-                    <a href="{% url 'dashboard:become_seller' %}" class="btn btn-secondary">Sell something</a>
                     {% else %}
                     <a href="{% url 'login' %}?next={% url 'dashboard:become_seller' %}" class="btn btn-secondary">Sell something</a>
                     {% endif %}
@@ -70,15 +68,17 @@
                             <div class="product-content">
                                 <div class="product-meta-row">
                                     <span class="product-price">{{ item.price_label }}</span>
+                                    {% if request.user.id == item.seller_id %}
+                                    <a class="card-action-link" href="{% url 'dashboard:buyer_detail' item.slug %}">Edit listing</a>
+                                    {% else %}
                                     <form method="post" action="{% url 'dashboard:toggle_saved_item' item.slug %}">
                                         {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
-                                        <button class="save-btn" type="submit" aria-label="Save listing">
-                                        <i class="bi bi-cart3"></i>
-                                        </button>
+                                        <button class="save-btn" type="submit" aria-label="Add to cart"><i class="bi bi-cart3"></i></button>
                                     </form>
+                                    {% endif %}
                                 </div>
-                                <h3><a href="{% url 'dashboard:buyer_detail' item.slug %}{% if query %}?q={{ query|urlencode }}{% endif %}{% if selected_category and selected_category != 'all' %}{% if query %}&{% else %}?{% endif %}category={{ selected_category }}{% endif %}" class="product-title-link">{{ item.title }}</a></h3>
-                                <p>{{ item.condition }} • {{ item.location }}</p>
+                                <h3 class="product-title"><a href="{% url 'dashboard:buyer_detail' item.slug %}{% if query %}?q={{ query|urlencode }}{% endif %}{% if selected_category and selected_category != 'all' %}{% if query %}&{% else %}?{% endif %}category={{ selected_category }}{% endif %}" class="product-title-link">{{ item.title }}</a></h3>
+                                <p class="product-subtitle">{{ item.condition }} • {{ item.location }}</p>
                                 <div class="product-footer">
                                     <div class="seller-info">
                                         <span class="listing-seller-avatar"><img src="{{ item.seller_avatar_url }}" alt="{{ item.seller_name }} profile picture"></span>

@@ -108,12 +108,24 @@ class Listing(models.Model):
 
 	@property
 	def gallery_urls(self):
-		uploaded = [image.image.url for image in self.listing_images.all()]
-		urls = uploaded
-		urls.extend(self.image_urls or [])
-		if not urls:
-			urls.append(self.image_url)
+		urls = []
+		for url in [image.image.url for image in self.listing_images.all()] + (self.image_urls or []):
+			if url and url not in urls:
+				urls.append(url)
+		if not urls and self.image:
+			urls.append(self.image.url)
 		return urls
+
+	@property
+	def gallery_image_ids(self):
+		seen = set()
+		image_ids = []
+		for image in self.listing_images.all():
+			if image.image.url in seen:
+				continue
+			seen.add(image.image.url)
+			image_ids.append(str(image.id))
+		return image_ids
 
 
 class ListingImage(models.Model):

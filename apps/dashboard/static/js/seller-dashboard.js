@@ -1,6 +1,14 @@
 const PRODUCT_CONDITIONS = ['Like new', 'Barely used', 'Good condition', 'For parts'];
 const SERVICE_CONDITIONS = ['Available by appointment', 'On-site service', 'Currently unavailable'];
 
+document.querySelectorAll('input[name="price"]').forEach((input) => {
+    input.addEventListener('input', () => {
+        const cleaned = input.value.replace(/[^0-9.]/g, '');
+        const [whole, ...decimalParts] = cleaned.split('.');
+        input.value = decimalParts.length ? `${whole}.${decimalParts.join('').slice(0, 2)}` : whole;
+    });
+});
+
 function openModal(modal) {
     if (modal) modal.hidden = false;
 }
@@ -27,15 +35,50 @@ if (listingCategory && listingCondition) {
 }
 
 const listingImageInput = document.querySelector('#listing-image');
-const listingImagePreview = document.querySelector('#add-listing-modal .image-preview');
+const listingPhotoPreview = document.querySelector('#listing-photo-preview');
+const listingMainImage = document.querySelector('#listing-main-image');
+const listingGallery = document.querySelector('#listing-gallery');
 const listingUploadBox = document.querySelector('#add-listing-modal .upload-box');
-if (listingImageInput && listingImagePreview && listingUploadBox) {
+let listingSelectedFiles = [];
+function setFiles(input, files) {
+    const dataTransfer = new DataTransfer();
+    files.forEach((file) => dataTransfer.items.add(file));
+    input.files = dataTransfer.files;
+}
+function renderListingPhotoPreview() {
+    if (!listingImageInput || !listingPhotoPreview || !listingMainImage || !listingGallery || !listingUploadBox) return;
+    const files = listingSelectedFiles;
+    listingGallery.replaceChildren(...files.map((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'manage-gallery-item';
+        item.innerHTML = `<img alt="Selected listing photo ${index + 1}"><button type="button" class="remove-gallery-image" aria-label="Remove selected photo" title="Remove selected photo"><i class="bi bi-trash3" aria-hidden="true"></i></button>`;
+        const image = item.querySelector('img');
+        const url = URL.createObjectURL(file);
+        image.src = url;
+        image.className = index === 0 ? 'manage-gallery-image active' : 'manage-gallery-image';
+        image.addEventListener('click', () => {
+            listingMainImage.src = url;
+            listingGallery.querySelectorAll('img').forEach((entry) => entry.classList.remove('active'));
+            image.classList.add('active');
+        });
+        item.querySelector('.remove-gallery-image').addEventListener('click', () => {
+            listingSelectedFiles = files.filter((selectedFile) => selectedFile !== file);
+            setFiles(listingImageInput, listingSelectedFiles);
+            renderListingPhotoPreview();
+        });
+        return item;
+    }));
+    const hasFiles = files.length > 0;
+    listingPhotoPreview.hidden = !hasFiles;
+    listingUploadBox.hidden = hasFiles;
+    if (hasFiles) listingMainImage.src = URL.createObjectURL(files[0]);
+}
+
+if (listingImageInput && listingPhotoPreview && listingGallery && listingUploadBox) {
     listingImageInput.addEventListener('change', () => {
-        const [file] = listingImageInput.files;
-        if (!file) return;
-        listingImagePreview.src = URL.createObjectURL(file);
-        listingImagePreview.hidden = false;
-        listingUploadBox.hidden = true;
+        listingSelectedFiles = [...listingSelectedFiles, ...listingImageInput.files];
+        setFiles(listingImageInput, listingSelectedFiles);
+        renderListingPhotoPreview();
     });
 }
 
@@ -43,6 +86,8 @@ const manageModal = document.querySelector('#manage-item-modal');
 const manageForm = document.querySelector('#manage-listing-form');
 const manageStatusBadge = document.querySelector('#manage-status-badge');
 const manageImage = document.querySelector('#manage-image');
+const manageGallery = document.querySelector('#manage-gallery');
+const manageRemovedImages = document.querySelector('#manage-removed-images');
 const manageViews = document.querySelector('#manage-views');
 const manageName = document.querySelector('#manage-name');
 const manageCategory = document.querySelector('#manage-category');
@@ -52,6 +97,7 @@ const manageLocation = document.querySelector('#manage-location');
 const manageDescription = document.querySelector('#manage-description');
 const manageStatus = document.querySelector('#manage-status');
 const manageImageInput = document.querySelector('#manage-item-image');
+let manageSelectedFiles = [];
 let activeListingCard = null;
 
 function refreshStatusAppearance() {
@@ -63,14 +109,74 @@ function refreshStatusAppearance() {
     manageStatusBadge.textContent = label;
 }
 
+function renderManageGallery(urls, ids = []) {
+    if (!manageGallery) return;
+    manageGallery.replaceChildren(...urls.filter(Boolean).map((url, index) => {
+        const item = document.createElement('div');
+        item.className = 'manage-gallery-item';
+        const imageId = ids[index] && /^\d+$/.test(ids[index]) ? ids[index] : '';
+        item.innerHTML = `<img alt="Uploaded listing photo ${index + 1}"><button type="button" class="remove-gallery-image" data-image-id="${imageId}" data-image-url="${url}" aria-label="Remove photo" title="Remove photo"><i class="bi bi-trash3" aria-hidden="true"></i></button>`;
+        const image = item.querySelector('img');
+        image.src = url;
+        image.className = index === 0 ? 'manage-gallery-image active' : 'manage-gallery-image';
+        image.addEventListener('click', () => {
+            manageImage.src = url;
+            manageGallery.querySelectorAll('img').forEach((entry) => entry.classList.remove('active'));
+            image.classList.add('active');
+        });
+        return item;
+    }));
+}
+
+function addManagePreview(url, label, onRemove) {
+    const item = document.createElement('div');
+    item.className = 'manage-gallery-item pending-gallery-item';
+    item.innerHTML = `<img alt="${label}"><button type="button" class="remove-gallery-image" aria-label="Remove selected photo" title="Remove selected photo"><i class="bi bi-trash3" aria-hidden="true"></i></button>`;
+    const image = item.querySelector('img');
+    image.src = url;
+    image.addEventListener('click', () => {
+        manageImage.src = url;
+        manageGallery.querySelectorAll('img').forEach((entry) => entry.classList.remove('active'));
+        image.classList.add('active');
+    });
+    item.querySelector('.remove-gallery-image').addEventListener('click', (event) => {
+        event.stopPropagation();
+        onRemove();
+        item.remove();
+    });
+    manageGallery.appendChild(item);
+}
+
+if (manageGallery) {
+    manageGallery.addEventListener('click', (event) => {
+        const removeButton = event.target.closest('.remove-gallery-image');
+        if (!removeButton || !manageRemovedImages) return;
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = removeButton.dataset.imageId ? 'remove_image_ids' : 'remove_image_urls';
+        input.value = removeButton.dataset.imageId || removeButton.dataset.imageUrl;
+        manageRemovedImages.appendChild(input);
+        removeButton.closest('.manage-gallery-item').remove();
+        event.preventDefault();
+        event.stopPropagation();
+    });
+}
+
 document.querySelectorAll('.manage-button').forEach((button) => {
     button.addEventListener('click', () => {
         const card = button.closest('.seller-listing');
         if (!card || !manageForm) return;
+        manageSelectedFiles = [];
+        if (manageImageInput) manageImageInput.value = '';
         activeListingCard = card;
         manageForm.action = card.dataset.editUrl;
+        if (manageRemovedImages) manageRemovedImages.replaceChildren();
         manageImage.src = card.dataset.image;
         manageImage.alt = card.dataset.name;
+        renderManageGallery(
+            card.dataset.gallery ? card.dataset.gallery.split('||') : [],
+            card.dataset.galleryIds ? card.dataset.galleryIds.split('||') : [],
+        );
         manageViews.textContent = card.dataset.views;
         manageName.value = card.dataset.name;
         manageCategory.value = card.dataset.categoryId;
@@ -95,8 +201,18 @@ if (window.initialManageListingId) {
 if (manageStatus) manageStatus.addEventListener('change', refreshStatusAppearance);
 if (manageImageInput && manageImage) {
     manageImageInput.addEventListener('change', () => {
-        const [file] = manageImageInput.files;
-        if (file) manageImage.src = URL.createObjectURL(file);
+        manageSelectedFiles = [...manageSelectedFiles, ...manageImageInput.files];
+        setFiles(manageImageInput, manageSelectedFiles);
+        const files = manageSelectedFiles;
+        if (!files.length) return;
+        const urls = files.map((file) => URL.createObjectURL(file));
+        urls.forEach((url, index) => {
+            addManagePreview(url, `New listing photo ${index + 1}`, () => {
+                manageSelectedFiles = manageSelectedFiles.filter((selectedFile) => selectedFile !== files[index]);
+                setFiles(manageImageInput, manageSelectedFiles);
+            });
+        });
+        manageImage.src = urls[0];
     });
 }
 

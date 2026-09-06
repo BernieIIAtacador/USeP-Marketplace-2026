@@ -440,7 +440,13 @@ def setup_buyer_cart(request):
 
 def _category_context():
     categories = Category.objects.all()
-    return [
+    category_context = [{
+        'id': None,
+        'label': 'All',
+        'slug': 'all',
+        'count': Listing.objects.filter(status=Listing.Status.ACTIVE).count(),
+    }]
+    category_context.extend([
         {
             'id': category.id,
             'label': category.name,
@@ -451,28 +457,34 @@ def _category_context():
             ).count(),
         }
         for category in categories
-    ]
+    ])
+    return category_context
 
 
 def _seller_profile(user):
     role = 'Marketplace seller'
+    program = ''
+    campus = ''
     if hasattr(user, 'staff_profile'):
         role = user.staff_profile.get_staff_type_display()
+        campus = str(user.staff_profile.campus)
     elif hasattr(user, 'student_profile'):
         role = 'Student seller'
+        program = str(user.student_profile.major.program)
     return {
         'id': user.pk,
         'name': f'{user.first_name} {user.last_name}'.strip() or user.email,
         'role': role,
         'avatar': user.profile_picture.url if user.profile_picture else '',
+        'email': user.email,
+        'contact': user.contact_num,
+        'program': program,
+        'campus': campus,
     }
 
 
 @login_required
 def setup_seller_dashboard(request):
-    if not request.user.is_seller:
-        return redirect('dashboard:buyer')
-
     listings = Listing.objects.filter(seller=request.user).select_related('category')
     active_listings = listings.filter(status=Listing.Status.ACTIVE)
     context = {
@@ -489,17 +501,12 @@ def setup_seller_dashboard(request):
 
 @login_required
 def become_seller(request):
-    request.user.is_seller = True
-    request.user.save(update_fields=['is_seller'])
-    messages.success(request, 'Seller tools are now enabled for your account.')
+    messages.success(request, 'Your seller workspace is ready.')
     return redirect('dashboard:seller')
 
 
 @login_required
 def create_listing(request):
-    if not request.user.is_seller:
-        return redirect('dashboard:buyer')
-
     if request.method != 'POST':
         return redirect('dashboard:seller')
 
@@ -522,9 +529,6 @@ def create_listing(request):
 
 @login_required
 def edit_listing(request, listing_id):
-    if not request.user.is_seller:
-        return redirect('dashboard:buyer')
-
     listing = get_object_or_404(Listing, pk=listing_id, seller=request.user)
     if request.method == 'GET':
         return render(
@@ -540,12 +544,31 @@ def edit_listing(request, listing_id):
     form = ListingForm(request.POST, instance=listing)
     if form.is_valid():
         form.save()
+        remove_ids = [value for value in request.POST.getlist('remove_image_ids') if value.isdigit()]
+        remove_urls = request.POST.getlist('remove_image_urls')
+        if remove_urls:
+            listing.image_urls = [url for url in listing.image_urls if url not in remove_urls]
+            listing.save(update_fields=['image_urls', 'updated_at'])
+        if remove_ids:
+            _remove_listing_images(listing, remove_ids)
+        if not listing.listing_images.exists() and not listing.image_urls:
+            listing.image = None
+            listing.save(update_fields=['image', 'updated_at'])
         uploaded_images = request.FILES.getlist('images')
         if uploaded_images:
             _save_listing_images(listing, uploaded_images)
         messages.success(request, 'Your listing has been updated.')
     else:
         messages.error(request, f'Listing was not updated: {form.errors.as_text()}')
+    return redirect(request.POST.get('next') or 'dashboard:seller')
+
+
+@login_required
+def delete_listing_image(request, listing_id, image_id):
+    if request.method == 'POST':
+        image = get_object_or_404(ListingImage, pk=image_id, listing_id=listing_id, listing__seller=request.user)
+        _remove_listing_images(image.listing, [image.id])
+        messages.success(request, 'Photo removed from the listing.')
     return redirect(request.POST.get('next') or 'dashboard:seller')
 
 
@@ -557,11 +580,23 @@ def _save_listing_images(listing, uploaded_images):
         ListingImage.objects.create(listing=listing, image=image)
 
 
+def _remove_listing_images(listing, image_ids):
+    images = list(ListingImage.objects.filter(listing=listing, id__in=image_ids))
+    if not images:
+        return
+    primary_names = {image.image.name for image in images}
+    ListingImage.objects.filter(id__in=[image.id for image in images]).delete()
+    if listing.image and listing.image.name in primary_names:
+        replacement = listing.listing_images.first()
+        listing.image = replacement.image if replacement else None
+        listing.save(update_fields=['image', 'updated_at'])
+    elif not listing.listing_images.exists() and not listing.image_urls and listing.image:
+        listing.image = None
+        listing.save(update_fields=['image', 'updated_at'])
+
+
 @login_required
 def delete_listing(request, listing_id):
-    if not request.user.is_seller:
-        return redirect('dashboard:buyer')
-
     if request.method == 'POST':
         listing = get_object_or_404(Listing, pk=listing_id, seller=request.user)
         listing.delete()
@@ -617,7 +652,7 @@ def setup_buyer_item_detail(request, item_slug):
         buyer=request.user,
         listing=listing,
     ).exists()
-    if listing.status not in (Listing.Status.ACTIVE, Listing.Status.RESERVED) and listing.seller != request.user and not saved_by_request_user:
+    if listing.status not in (Listing.Status.ACTIVE, Listing.Status.RESERVED, Listing.Status.SOLD) and listing.seller != request.user and not saved_by_request_user:
         raise Http404('Listing not found.')
     Listing.objects.filter(pk=listing.pk).update(views=listing.views + 1)
     listing.views += 1
@@ -625,6 +660,12 @@ def setup_buyer_item_detail(request, item_slug):
         seller=listing.seller,
         status=Listing.Status.ACTIVE,
     ).exclude(pk=listing.pk).select_related('category')
+    gallery_images = [
+        {'id': image.id, 'url': image.image.url}
+        for image in listing.listing_images.all()
+    ]
+    if not gallery_images:
+        gallery_images = [{'id': None, 'url': image} for image in listing.gallery_urls]
     item_context = {
         'id': listing.id,
         'slug': listing.slug,
@@ -642,6 +683,7 @@ def setup_buyer_item_detail(request, item_slug):
         'views': listing.views,
         'image_url': listing.image_url,
         'images': listing.gallery_urls,
+        'gallery_images': gallery_images,
         'description': listing.description,
     }
     return render(
@@ -668,6 +710,8 @@ def toggle_saved_item(request, item_slug):
         if saved_item:
             saved_item.delete()
             messages.info(request, 'Listing removed from your saved items.')
+        elif listing.seller_id == request.user.id:
+            messages.error(request, 'You cannot add your own listing to your cart.')
         elif listing.status == Listing.Status.ACTIVE:
             SavedItem.objects.create(buyer=request.user, listing=listing)
             messages.success(request, 'Listing saved for later.')

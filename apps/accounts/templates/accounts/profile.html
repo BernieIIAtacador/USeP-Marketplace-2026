@@ -28,12 +28,14 @@
                 <span class="profile-hero-role">{{ request.user.get_role_display }}</span>
                 <h1>{{ request.user.first_name }} {{ request.user.last_name }}</h1>
                 <p>{{ request.user.email }}</p>
+                {% if request.user.student_profile %}<span class="profile-hero-program">{{ request.user.student_profile.major.program }}</span>{% endif %}
+                {% if request.user.staff_profile %}<span class="profile-hero-program">{{ request.user.staff_profile.get_staff_type_display }} · {{ request.user.staff_profile.campus }}</span>{% endif %}
             </div>
         </section>
 
         <section class="profile-grid">
             <div class="panel profile-panel">
-                <h2>Personal information</h2>
+                <h2><i class="bi bi-person-vcard"></i> Personal information</h2>
                 <dl class="profile-fields">
                     <div class="profile-field"><dt>First name</dt><dd>{{ request.user.first_name }}</dd></div>
                     {% if request.user.middle_name %}
@@ -47,7 +49,7 @@
             </div>
 
             <div class="panel profile-panel">
-                <h2>Account details</h2>
+                <h2><i class="bi bi-mortarboard"></i> Academic and staff details</h2>
                 <dl class="profile-fields">
                     {% if request.user.student_profile %}
                     <div class="profile-field"><dt>Student ID</dt><dd>{{ request.user.student_profile.student_id }}</dd></div>

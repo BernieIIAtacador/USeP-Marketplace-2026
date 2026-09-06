@@ -3,6 +3,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.accounts.models import User
+from .forms import ListingForm
 from .models import Category, Conversation, Listing, SavedItem
 
 
@@ -62,6 +63,13 @@ class BuyerDashboardViewsTests(TestCase):
         self.assertIn('images', response.context['item'])
         self.assertGreaterEqual(len(response.context['item']['images']), 2)
 
+    def test_buyer_detail_includes_seller_profile_details(self):
+        response = self.client.get(reverse('dashboard:buyer_detail', args=['engineering-mechanics-textbook']))
+        seller = response.context['seller_info']
+        self.assertIn(seller['name'], response.content.decode())
+        self.assertIn(seller['role'], response.content.decode())
+        self.assertIn(seller['email'], response.content.decode())
+
     def test_seller_dashboard_requires_login(self):
         response = self.client.get(reverse('dashboard:seller'))
         self.assertEqual(response.status_code, 302)
@@ -92,6 +100,14 @@ class BuyerDashboardViewsTests(TestCase):
         )
         self.assertEqual(chat_response.status_code, 302)
         self.assertTrue(Conversation.objects.filter(buyer=buyer, listing=listing).exists())
+
+    def test_seller_cannot_add_own_listing_to_cart(self):
+        seller = User.objects.get(email='test.seller@usep.edu.ph')
+        listing = Listing.objects.filter(seller=seller, status=Listing.Status.ACTIVE).first()
+        self.client.force_login(seller)
+        response = self.client.post(reverse('dashboard:toggle_saved_item', args=[listing.slug]))
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(SavedItem.objects.filter(buyer=seller, listing=listing).exists())
 
     def test_seller_can_create_listing_for_their_account(self):
         seller = User.objects.create_user(
@@ -158,6 +174,105 @@ class BuyerDashboardViewsTests(TestCase):
         self.assertEqual(listing.status, Listing.Status.SOLD)
         self.assertEqual(listing.listing_images.count(), 2)
 
+    def test_seller_can_remove_an_uploaded_listing_photo(self):
+        seller = User.objects.create_user(
+            email='photo-remover@example.com', password='StrongPassword123!',
+            first_name='Photo', last_name='Remover', contact_num='09123456776',
+            email_verified=True, is_first_login=False,
+        )
+        listing = Listing.objects.filter(seller_id__isnull=False).first()
+        listing.seller = seller
+        listing.save(update_fields=['seller'])
+        first_image = listing.listing_images.first()
+        if not first_image:
+            from .models import ListingImage
+            first_image = ListingImage.objects.create(listing=listing)
+        self.client.force_login(seller)
+        response = self.client.post(reverse('dashboard:edit_listing', args=[listing.id]), {
+            'title': listing.title,
+            'category': listing.category_id,
+            'price': str(listing.price),
+            'condition': listing.condition,
+            'location': listing.location,
+            'description': listing.description,
+            'status': listing.status,
+            'remove_image_ids': [first_image.id],
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(listing.listing_images.filter(id=first_image.id).exists())
+
+    def test_listing_edit_ignores_missing_photo_id_when_uploading_replacement(self):
+        seller = User.objects.create_user(
+            email='photo-replacement@example.com', password='StrongPassword123!',
+            first_name='Photo', last_name='Replacement', contact_num='09123456775',
+            email_verified=True, is_first_login=False,
+        )
+        listing = Listing.objects.filter(seller_id__isnull=False).first()
+        listing.seller = seller
+        listing.save(update_fields=['seller'])
+        self.client.force_login(seller)
+        response = self.client.post(reverse('dashboard:edit_listing', args=[listing.id]), {
+            'title': listing.title,
+            'category': listing.category_id,
+            'price': str(listing.price),
+            'condition': listing.condition,
+            'location': listing.location,
+            'description': listing.description,
+            'status': listing.status,
+            'remove_image_ids': 'None',
+            'images': SimpleUploadedFile('replacement.jpg', b'replacement-image', content_type='image/jpeg'),
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(listing.listing_images.exists())
+
+    def test_removing_all_photos_then_uploading_one_replaces_the_primary_photo(self):
+        from .models import ListingImage
+
+        seller = User.objects.create_user(
+            email='photo-reset@example.com', password='StrongPassword123!',
+            first_name='Photo', last_name='Reset', contact_num='09123456774',
+            email_verified=True, is_first_login=False,
+        )
+        listing = Listing.objects.filter(seller_id__isnull=False).first()
+        listing.seller = seller
+        listing.save(update_fields=['seller'])
+        old_primary_name = listing.image.name
+        existing_images = list(listing.listing_images.all())
+        if not existing_images:
+            existing_images = [ListingImage.objects.create(listing=listing)]
+        self.client.force_login(seller)
+        response = self.client.post(reverse('dashboard:edit_listing', args=[listing.id]), {
+            'title': listing.title,
+            'category': listing.category_id,
+            'price': str(listing.price),
+            'condition': listing.condition,
+            'location': listing.location,
+            'description': listing.description,
+            'status': listing.status,
+            'remove_image_ids': [image.id for image in existing_images],
+            'images': SimpleUploadedFile('replacement.jpg', b'replacement-image', content_type='image/jpeg'),
+        })
+        self.assertEqual(response.status_code, 302)
+        listing.refresh_from_db()
+        self.assertEqual(listing.listing_images.count(), 1)
+        self.assertTrue(listing.image)
+        self.assertNotEqual(listing.image.name, old_primary_name)
+
+    def test_primary_photo_without_gallery_record_is_shown_as_a_real_gallery_photo(self):
+        seller = User.objects.create_user(
+            email='legacy-photo@example.com', password='StrongPassword123!',
+            first_name='Legacy', last_name='Photo', contact_num='09123456773',
+            email_verified=True, is_first_login=False,
+        )
+        listing = Listing.objects.filter(seller_id__isnull=False).first()
+        listing.seller = seller
+        listing.listing_images.all().delete()
+        listing.image_urls = []
+        listing.image = SimpleUploadedFile('legacy.jpg', b'legacy-image', content_type='image/jpeg')
+        listing.save()
+        self.assertEqual(len(listing.gallery_urls), 1)
+        self.assertNotIn('placehold.co', listing.gallery_urls[0])
+
     def test_buyer_is_sent_to_buyer_dashboard_and_cannot_open_seller_dashboard(self):
         buyer = User.objects.create_user(
             email='routing-buyer@example.com',
@@ -169,7 +284,7 @@ class BuyerDashboardViewsTests(TestCase):
             is_first_login=False,
         )
         self.client.force_login(buyer)
-        self.assertEqual(self.client.get(reverse('dashboard:seller')).url, reverse('dashboard:buyer'))
+        self.assertEqual(self.client.get(reverse('dashboard:seller')).status_code, 200)
 
     def test_buyer_can_enable_seller_tools(self):
         buyer = User.objects.create_user(
@@ -184,8 +299,6 @@ class BuyerDashboardViewsTests(TestCase):
         self.client.force_login(buyer)
         response = self.client.get(reverse('dashboard:become_seller'))
         self.assertRedirects(response, reverse('dashboard:seller'))
-        buyer.refresh_from_db()
-        self.assertTrue(buyer.is_seller)
 
     def test_seller_default_landing_is_still_buyer_listings(self):
         seller = User.objects.get(email='test.seller@usep.edu.ph')
@@ -260,6 +373,26 @@ class BuyerDashboardViewsTests(TestCase):
         self.assertRedirects(remove_response, reverse('dashboard:buyer_cart'))
         self.assertFalse(SavedItem.objects.filter(buyer=buyer, listing=listing).exists())
 
+    def test_sold_listing_remains_viewable_after_cart_removal(self):
+        buyer = User.objects.create_user(
+            email='sold-detail-user@example.com', password='StrongPassword123!',
+            first_name='Sold', last_name='Detail', contact_num='09123456771',
+            email_verified=True, is_first_login=False,
+        )
+        listing = Listing.objects.filter(status=Listing.Status.ACTIVE).first()
+        self.client.force_login(buyer)
+        self.client.post(reverse('dashboard:toggle_saved_item', args=[listing.slug]))
+        listing.status = Listing.Status.SOLD
+        listing.save(update_fields=['status'])
+        self.client.post(reverse('dashboard:toggle_saved_item', args=[listing.slug]), {
+            'next': reverse('dashboard:buyer_cart'),
+        })
+
+        response = self.client.get(reverse('dashboard:buyer_detail', args=[listing.slug]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'This listing has been sold.')
+        self.assertContains(response, '>Sold<')
+
     def test_available_cart_item_has_message_button_but_sold_item_does_not(self):
         buyer = User.objects.create_user(
             email='cart-message-user@example.com', password='StrongPassword123!',
@@ -285,6 +418,20 @@ class BuyerDashboardViewsTests(TestCase):
         response = self.client.get(reverse('dashboard:buyer_detail', args=[listing.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.context['can_edit'])
+        self.assertNotContains(response, 'Message seller')
+
+    def test_non_owner_sees_buyer_actions_on_listing_detail(self):
+        buyer = User.objects.create_user(
+            email='non-owner-actions@example.com', password='StrongPassword123!',
+            first_name='Non', last_name='Owner', contact_num='09123456778',
+            email_verified=True, is_first_login=False,
+        )
+        listing = Listing.objects.filter(status=Listing.Status.ACTIVE).first()
+        self.client.force_login(buyer)
+        response = self.client.get(reverse('dashboard:buyer_detail', args=[listing.slug]))
+        self.assertContains(response, 'Message seller')
+        self.assertContains(response, 'Add to cart')
+        self.assertNotContains(response, 'id="open-detail-edit"')
 
     def test_owner_edit_link_targets_dashboard_manage_modal(self):
         seller = User.objects.get(email='test.seller@usep.edu.ph')
@@ -294,3 +441,30 @@ class BuyerDashboardViewsTests(TestCase):
         self.assertContains(response, 'id="open-detail-edit"')
         self.assertContains(response, 'id="detail-edit-modal"')
         self.assertContains(response, f'action="/dashboard/seller/listings/{listing.id}/edit/"')
+
+    def test_listing_form_rejects_malformed_prices(self):
+        category = Category.objects.get(slug='textbooks')
+        for value in ['1 0 0 0', '1@000', 'abc1000', '1000!!!', '10.00.50', '-50']:
+            form = ListingForm(data={
+                'title': 'Valid title',
+                'category': category.pk,
+                'price': value,
+                'condition': 'Good condition',
+                'location': 'Library',
+                'description': 'Valid description.',
+                'status': Listing.Status.ACTIVE,
+            })
+            self.assertFalse(form.is_valid(), value)
+
+    def test_listing_form_accepts_clean_decimal_prices(self):
+        category = Category.objects.get(slug='textbooks')
+        form = ListingForm(data={
+            'title': 'Valid title',
+            'category': category.pk,
+            'price': '1000.50',
+            'condition': 'Good condition',
+            'location': 'Library',
+            'description': 'Valid description.',
+            'status': Listing.Status.ACTIVE,
+        })
+        self.assertTrue(form.is_valid())

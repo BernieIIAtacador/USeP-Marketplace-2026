@@ -20,12 +20,19 @@
             </a>
         </div>
 
+        {% if item.status == 'SOLD' %}
+        <div class="detail-sold-warning" role="status">
+            <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+            <div><strong>This listing has been sold.</strong><span>It is no longer available and cannot be added to your cart.</span></div>
+        </div>
+        {% endif %}
+
         <section class="detail-layout">
             <div class="detail-gallery panel">
                 <div class="detail-image-frame">
                     <div class="detail-image" style="background-image: url('{{ item.image_url }}'); background-size: cover; background-position: center;"></div>
                 </div>
-                <div class="thumbnail-row" aria-label="Product gallery thumbnails">
+                <div class="thumbnail-row {% if item.images|length < 2 %}thumbnail-row-single{% endif %}" aria-label="Product gallery thumbnails">
                     {% for image in item.images %}
                     <button type="button" class="thumb {% if forloop.first %}active{% endif %}" data-image="{{ image }}" style="background-image: url('{{ image }}'); background-size: cover; background-position: center;" aria-label="View product image {{ forloop.counter }}"></button>
                     {% endfor %}
@@ -44,7 +51,11 @@
                     <div><span>Location</span><strong>{{ item.location }}</strong></div>
                 </div>
 
-                {% if request.user.is_authenticated %}
+                {% if request.user.is_authenticated and can_edit %}
+                <span class="btn btn-outline detail-action detail-action-disabled"><i class="bi bi-person-check"></i> Your listing</span>
+                {% elif request.user.is_authenticated and item.status == 'SOLD' %}
+                <span class="btn btn-outline detail-action detail-action-disabled"><i class="bi bi-check-circle"></i> Sold</span>
+                {% elif request.user.is_authenticated %}
                 <button class="btn btn-primary detail-action chat-coming-soon" type="button">Message seller</button>
                 <form method="post" action="{% url 'dashboard:toggle_saved_item' item.slug %}">
                     {% csrf_token %}
@@ -66,6 +77,12 @@
                 <div class="seller-profile-info">
                     <strong class="seller-name">{{ seller_info.name }}</strong>
                     <small class="seller-role">{{ seller_info.role }}</small>
+                </div>
+                <div class="seller-profile-details">
+                    {% if seller_info.program %}<span><i class="bi bi-mortarboard"></i>{{ seller_info.program }}</span>{% endif %}
+                    {% if seller_info.campus %}<span><i class="bi bi-geo-alt"></i>{{ seller_info.campus }}</span>{% endif %}
+                    <span><i class="bi bi-envelope"></i>{{ seller_info.email }}</span>
+                    {% if seller_info.contact %}<span><i class="bi bi-telephone"></i>{{ seller_info.contact }}</span>{% endif %}
                 </div>
                 {% if other_products %}
                 <a href="{% url 'dashboard:buyer' %}?seller={{ item.seller_id }}" class="btn btn-sm btn-outline other-products-btn">
@@ -104,15 +121,19 @@
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.path }}">
             <section class="preview-panel">
-                <img src="{{ item.image_url }}" alt="{{ item.title }}">
+                <img class="photo-preview-main detail-edit-main-image" id="detail-edit-main-image" src="{{ item.image_url }}" alt="{{ item.title }}">
+                <div class="manage-gallery detail-edit-gallery" id="detail-edit-gallery" aria-label="Uploaded listing photos">
+                    {% for image in item.gallery_images %}<div class="manage-gallery-item"><img class="manage-gallery-image{% if forloop.first %} active{% endif %}" src="{{ image.url }}" alt="{{ item.title }} photo {{ forloop.counter }}"><button type="button" class="remove-gallery-image"{% if image.id %} data-image-id="{{ image.id }}"{% endif %} data-image-url="{{ image.url }}" aria-label="Remove photo" title="Remove photo"><i class="bi bi-trash3" aria-hidden="true"></i></button></div>{% endfor %}
+                </div>
                 <label class="change-photo" for="detail-edit-images">Add more photos</label>
                 <input class="image-input" name="images" id="detail-edit-images" type="file" accept="image/*" multiple>
+                <div id="detail-removed-images"></div>
                 <div class="preview-stats"><span>Listing views</span><strong>{{ item.views }}</strong></div>
             </section>
             <section class="edit-panel">
                 <div class="form-group"><label class="form-label" for="detail-edit-title">Item name</label><input class="form-control" name="title" id="detail-edit-title" value="{{ item.title }}" required></div>
                 <div class="field-row">
-                    <div class="form-group"><label class="form-label" for="detail-edit-category">Category</label><select class="form-control" name="category" id="detail-edit-category">{% for category in categories %}<option value="{{ category.id }}" {% if category.slug == selected_category %}selected{% endif %}>{{ category.label }}</option>{% endfor %}</select></div>
+                    <div class="form-group"><label class="form-label" for="detail-edit-category">Category</label><select class="form-control" name="category" id="detail-edit-category">{% for category in categories %}{% if category.id %}<option value="{{ category.id }}" {% if category.slug == selected_category %}selected{% endif %}>{{ category.label }}</option>{% endif %}{% endfor %}</select></div>
                     <div class="form-group"><label class="form-label" for="detail-edit-price">Price</label><input class="form-control" name="price" id="detail-edit-price" type="number" min="0" step="0.01" value="{{ item.price }}" required></div>
                 </div>
                 <div class="form-group"><label class="form-label" for="detail-edit-condition">Condition or availability</label><input class="form-control" name="condition" id="detail-edit-condition" value="{{ item.condition }}" required></div>
@@ -129,5 +150,5 @@
 
 {% block extra_js %}
 <script src="{% static 'js/buyer-dashboard.js' %}?v=20260905-4"></script>
-{% if can_edit %}<script src="{% static 'js/detail-edit-modal.js' %}?v=20260905-1"></script>{% endif %}
+{% if can_edit %}<script src="{% static 'js/detail-edit-modal.js' %}?v=20260906-5"></script>{% endif %}
 {% endblock %}
